@@ -145,3 +145,6 @@ datasets
 
 # models
 models
+
+# wandb
+wandb
