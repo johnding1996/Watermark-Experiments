@@ -1,6 +1,5 @@
 import numpy as np
 import torch as th
-
 from .gaussian_diffusion import GaussianDiffusion
 
 

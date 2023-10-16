@@ -1,6 +1,5 @@
 import math
 import random
-
 from PIL import Image
 import blobfile as bf
 from mpi4py import MPI

@@ -484,17 +484,17 @@ class GaussianDiffusion:
             progress=progress,
         ):
             final = sample
-            
+
         if return_image:
             final = final["sample"]
             final = ((final + 1) * 127.5).clamp(0, 255).to(th.uint8)
             final = final.permute(0, 2, 3, 1)
             final = final.contiguous()
-            
+
             outputs = []
             for i in range(final.shape[0]):
                 final_i = final[i].detach().cpu().numpy()
-                final_i = Image.fromarray(final_i, 'RGB')
+                final_i = Image.fromarray(final_i, "RGB")
                 outputs.append(final_i)
             return outputs
         else:
@@ -592,12 +592,17 @@ class GaussianDiffusion:
         noise = th.randn_like(x)
         mean_pred = (
             out["pred_xstart"] * th.sqrt(alpha_bar_prev)
-            + th.sqrt(1 - alpha_bar_prev - sigma ** 2) * eps
+            + th.sqrt(1 - alpha_bar_prev - sigma**2) * eps
         )
         nonzero_mask = (
             (t != 0).float().view(-1, *([1] * (len(x.shape) - 1)))
         )  # no noise when t == 0
         sample = mean_pred + nonzero_mask * sigma * noise
+        # TODO
+        if t <= 3:
+            print(
+                f"t={t.item()}, alpha_prev={alpha_bar_prev[0,0,0,0].item()}, alpha_next={alpha_bar[0,0,0,0].item()}, a={out['pred_xstart'][0,0,0,0].item()}, b={eps[0,0,0,0].item()}, in={x[0,0,0,0].item()}, out={sample[0,0,0,0].item()}"
+            )
         return {"sample": sample, "pred_xstart": out["pred_xstart"]}
 
     def ddim_reverse_sample(
@@ -635,7 +640,11 @@ class GaussianDiffusion:
             out["pred_xstart"] * th.sqrt(alpha_bar_next)
             + th.sqrt(1 - alpha_bar_next) * eps
         )
-
+        # TODO
+        if t <= 3:
+            print(
+                f"t={t.item()}, alpha_prev={None}, alpha_next={alpha_bar_next[0,0,0,0].item()}, a={out['pred_xstart'][0,0,0,0].item()}, b={eps[0,0,0,0].item()}, in={x[0,0,0,0].item()}, out={mean_pred[0,0,0,0].item()}"
+            )
         return {"sample": mean_pred, "pred_xstart": out["pred_xstart"]}
 
     def ddim_reverse_sample_loop(
@@ -651,6 +660,7 @@ class GaussianDiffusion:
         device=None,
         progress=False,
         eta=0.0,
+        input_image=False,
     ):
         """
         Generate samples from the model using DDIM.
@@ -670,9 +680,10 @@ class GaussianDiffusion:
             device=device,
             progress=progress,
             eta=eta,
+            input_image=input_image,
         ):
             final = sample
-            
+
         return final["sample"]
 
     def ddim_reverse_sample_loop_progressive(
@@ -688,6 +699,7 @@ class GaussianDiffusion:
         device=None,
         progress=False,
         eta=0.0,
+        input_image=False,
     ):
         """
         Use DDIM to sample from the model and yield intermediate samples from
@@ -698,8 +710,17 @@ class GaussianDiffusion:
         if device is None:
             device = next(model.parameters()).device
         assert isinstance(shape, (tuple, list))
-        
-        img = th.tensor(np.array(image), device=device, dtype=th.float32).unsqueeze(0).permute(0, 3, 1, 2) / 127.5 - 1
+
+        if input_image:
+            img = (
+                th.tensor(np.array(image), device=device, dtype=th.float32).permute(
+                    0, 3, 1, 2
+                )
+                / 127.5
+                - 1
+            )
+        else:
+            img = image
 
         indices = list(range(self.num_timesteps))
 
@@ -763,11 +784,11 @@ class GaussianDiffusion:
             final = ((final + 1) * 127.5).clamp(0, 255).to(th.uint8)
             final = final.permute(0, 2, 3, 1)
             final = final.contiguous()
-            
+
             outputs = []
             for i in range(final.shape[0]):
                 final_i = final[i].detach().cpu().numpy()
-                final_i = Image.fromarray(final_i, 'RGB')
+                final_i = Image.fromarray(final_i, "RGB")
                 outputs.append(final_i)
             return outputs
         else:

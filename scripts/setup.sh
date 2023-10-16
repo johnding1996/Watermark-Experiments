@@ -10,7 +10,8 @@ pip install wandb
 wandb login e66105607bb979a5e6e49a3d5d4ce02894398354
 # Download datasets
 mkdir datasets && cd datasets
-wget https://s3.amazonaws.com/fast-ai-imageclas/imagenette2-320.tgz && tar -xvzf imagenette2-320. && rm imagenette2-320.tgz
+wget https://raw.githubusercontent.com/raghakot/keras-vis/master/resources/imagenet_class_index.json
+wget https://s3.amazonaws.com/fast-ai-imageclas/imagenette2-320.tgz && tar -xvzf imagenette2-320.tgz && rm imagenette2-320.tgz
 wget https://image-net.org/data/tiny-imagenet-200.zip && unzip tiny-imagenet-200.zip && rm tiny-imagenet-200.zip
 cd ..
 # Download checkpoints

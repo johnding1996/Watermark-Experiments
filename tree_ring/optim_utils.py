@@ -14,15 +14,15 @@ def read_json(filename: str) -> Mapping[str, Any]:
     """Returns a Python dict representation of JSON object at input file."""
     with open(filename) as fp:
         return json.load(fp)
-    
+
 
 def set_random_seed(seed=0):
-    torch.manual_seed(seed + 0)
-    torch.cuda.manual_seed(seed + 1)
-    torch.cuda.manual_seed_all(seed + 2)
-    np.random.seed(seed + 3)
-    torch.cuda.manual_seed_all(seed + 4)
-    random.seed(seed + 5)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    np.random.seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    random.seed(seed)
 
 
 def transform_img(image, target_size=512):
@@ -57,10 +57,18 @@ def image_distortion(img1, img2, seed, args):
 
     if args.crop_scale is not None and args.crop_ratio is not None:
         set_random_seed(seed)
-        img1 = transforms.RandomResizedCrop(img1.size, scale=(args.crop_scale, args.crop_scale), ratio=(args.crop_ratio, args.crop_ratio))(img1)
+        img1 = transforms.RandomResizedCrop(
+            img1.size,
+            scale=(args.crop_scale, args.crop_scale),
+            ratio=(args.crop_ratio, args.crop_ratio),
+        )(img1)
         set_random_seed(seed)
-        img2 = transforms.RandomResizedCrop(img2.size, scale=(args.crop_scale, args.crop_scale), ratio=(args.crop_ratio, args.crop_ratio))(img2)
-        
+        img2 = transforms.RandomResizedCrop(
+            img2.size,
+            scale=(args.crop_scale, args.crop_scale),
+            ratio=(args.crop_ratio, args.crop_ratio),
+        )(img2)
+
     if args.gaussian_blur_r is not None:
         img1 = img1.filter(ImageFilter.GaussianBlur(radius=args.gaussian_blur_r))
         img2 = img2.filter(ImageFilter.GaussianBlur(radius=args.gaussian_blur_r))
@@ -88,44 +96,45 @@ def measure_similarity(images, prompt, model, clip_preprocess, tokenizer, device
 
         text = tokenizer([prompt]).to(device)
         text_features = model.encode_text(text)
-        
+
         image_features /= image_features.norm(dim=-1, keepdim=True)
         text_features /= text_features.norm(dim=-1, keepdim=True)
-        
+
         return (image_features @ text_features.T).mean(-1)
 
 
 def get_dataset(args):
-    if 'laion' in args.dataset:
-        dataset = load_dataset(args.dataset)['train']
-        prompt_key = 'TEXT'
-    elif 'coco' in args.dataset:
-        with open('fid_outputs/coco/meta_data.json') as f:
+    if "laion" in args.dataset:
+        dataset = load_dataset(args.dataset)["train"]
+        prompt_key = "TEXT"
+    elif "coco" in args.dataset:
+        with open("fid_outputs/coco/meta_data.json") as f:
             dataset = json.load(f)
-            dataset = dataset['annotations']
-            prompt_key = 'caption'
+            dataset = dataset["annotations"]
+            prompt_key = "caption"
     else:
-        dataset = load_dataset(args.dataset)['test']
-        prompt_key = 'Prompt'
+        dataset = load_dataset(args.dataset)["test"]
+        prompt_key = "Prompt"
 
     return dataset, prompt_key
 
 
 def circle_mask(size=64, r=10, x_offset=0, y_offset=0):
     # reference: https://stackoverflow.com/questions/69687798/generating-a-soft-circluar-mask-using-numpy-python-3
+    # From visualization, seems there is a offset of 0.5 of the center, need to check the frequencies of the fft2 and whether this is correct
     x0 = y0 = size // 2
     x0 += x_offset
     y0 += y_offset
     y, x = np.ogrid[:size, :size]
     y = y[::-1]
 
-    return ((x - x0)**2 + (y-y0)**2)<= r**2
+    return ((x - x0) ** 2 + (y - y0) ** 2) <= r**2
 
 
 def get_watermarking_mask(init_latents_w, args, device):
     watermarking_mask = torch.zeros(init_latents_w.shape, dtype=torch.bool).to(device)
 
-    if args.w_mask_shape == 'circle':
+    if args.w_mask_shape == "circle":
         np_mask = circle_mask(init_latents_w.shape[-1], r=args.w_radius)
         torch_mask = torch.tensor(np_mask).to(device)
 
@@ -134,17 +143,27 @@ def get_watermarking_mask(init_latents_w, args, device):
             watermarking_mask[:, :] = torch_mask
         else:
             watermarking_mask[:, args.w_channel] = torch_mask
-    elif args.w_mask_shape == 'square':
+    elif args.w_mask_shape == "square":
         anchor_p = init_latents_w.shape[-1] // 2
         if args.w_channel == -1:
             # all channels
-            watermarking_mask[:, :, anchor_p-args.w_radius:anchor_p+args.w_radius, anchor_p-args.w_radius:anchor_p+args.w_radius] = True
+            watermarking_mask[
+                :,
+                :,
+                anchor_p - args.w_radius : anchor_p + args.w_radius,
+                anchor_p - args.w_radius : anchor_p + args.w_radius,
+            ] = True
         else:
-            watermarking_mask[:, args.w_channel, anchor_p-args.w_radius:anchor_p+args.w_radius, anchor_p-args.w_radius:anchor_p+args.w_radius] = True
-    elif args.w_mask_shape == 'no':
+            watermarking_mask[
+                :,
+                args.w_channel,
+                anchor_p - args.w_radius : anchor_p + args.w_radius,
+                anchor_p - args.w_radius : anchor_p + args.w_radius,
+            ] = True
+    elif args.w_mask_shape == "no":
         pass
     else:
-        raise NotImplementedError(f'w_mask_shape: {args.w_mask_shape}')
+        raise NotImplementedError(f"w_mask_shape: {args.w_mask_shape}")
 
     return watermarking_mask
 
@@ -156,73 +175,94 @@ def get_watermarking_pattern(pipe, args, device, shape=None):
     else:
         gt_init = pipe.get_random_latents()
 
-    if 'seed_ring' in args.w_pattern:
+    if "seed_ring" in args.w_pattern:
         gt_patch = gt_init
 
         gt_patch_tmp = copy.deepcopy(gt_patch)
         for i in range(args.w_radius, 0, -1):
             tmp_mask = circle_mask(gt_init.shape[-1], r=i)
             tmp_mask = torch.tensor(tmp_mask).to(device)
-            
+
             for j in range(gt_patch.shape[1]):
                 gt_patch[:, j, tmp_mask] = gt_patch_tmp[0, j, 0, i].item()
-    elif 'seed_zeros' in args.w_pattern:
+    elif "seed_zeros" in args.w_pattern:
         gt_patch = gt_init * 0
-    elif 'seed_rand' in args.w_pattern:
+    elif "seed_rand" in args.w_pattern:
         gt_patch = gt_init
-    elif 'rand' in args.w_pattern:
+    elif "rand" in args.w_pattern:
         gt_patch = torch.fft.fftshift(torch.fft.fft2(gt_init), dim=(-1, -2))
         gt_patch[:] = gt_patch[0]
-    elif 'zeros' in args.w_pattern:
+    elif "zeros" in args.w_pattern:
         gt_patch = torch.fft.fftshift(torch.fft.fft2(gt_init), dim=(-1, -2)) * 0
-    elif 'const' in args.w_pattern:
+    elif "const" in args.w_pattern:
         gt_patch = torch.fft.fftshift(torch.fft.fft2(gt_init), dim=(-1, -2)) * 0
         gt_patch += args.w_pattern_const
-    elif 'ring' in args.w_pattern:
+    elif "ring" in args.w_pattern:
         gt_patch = torch.fft.fftshift(torch.fft.fft2(gt_init), dim=(-1, -2))
-
         gt_patch_tmp = copy.deepcopy(gt_patch)
         for i in range(args.w_radius, 0, -1):
             tmp_mask = circle_mask(gt_init.shape[-1], r=i)
             tmp_mask = torch.tensor(tmp_mask).to(device)
-            
             for j in range(gt_patch.shape[1]):
                 gt_patch[:, j, tmp_mask] = gt_patch_tmp[0, j, 0, i].item()
-
     return gt_patch
 
 
 def inject_watermark(init_latents_w, watermarking_mask, gt_patch, args):
-    init_latents_w_fft = torch.fft.fftshift(torch.fft.fft2(init_latents_w), dim=(-1, -2))
-    if args.w_injection == 'complex':
+    init_latents_w_fft = torch.fft.fftshift(
+        torch.fft.fft2(init_latents_w), dim=(-1, -2)
+    )
+    if args.w_injection == "complex":
         init_latents_w_fft[watermarking_mask] = gt_patch[watermarking_mask].clone()
-    elif args.w_injection == 'seed':
+        init_latents_w = torch.fft.ifft2(
+            torch.fft.ifftshift(init_latents_w_fft, dim=(-1, -2))
+        ).real
+        return init_latents_w
+    elif args.w_injection == "seed":
         init_latents_w[watermarking_mask] = gt_patch[watermarking_mask].clone()
         return init_latents_w
     else:
-        NotImplementedError(f'w_injection: {args.w_injection}')
-
-    init_latents_w = torch.fft.ifft2(torch.fft.ifftshift(init_latents_w_fft, dim=(-1, -2))).real
-
-    return init_latents_w
+        NotImplementedError(f"w_injection: {args.w_injection}")
 
 
-def eval_watermark(reversed_latents_no_w, reversed_latents_w, watermarking_mask, gt_patch, args):
-    if 'complex' in args.w_measurement:
-        reversed_latents_no_w_fft = torch.fft.fftshift(torch.fft.fft2(reversed_latents_no_w), dim=(-1, -2))
-        reversed_latents_w_fft = torch.fft.fftshift(torch.fft.fft2(reversed_latents_w), dim=(-1, -2))
+def eval_watermark(
+    reversed_latents_no_w, reversed_latents_w, watermarking_mask, gt_patch, args
+):
+    if "complex" in args.w_measurement:
+        reversed_latents_no_w_fft = torch.fft.fftshift(
+            torch.fft.fft2(reversed_latents_no_w), dim=(-1, -2)
+        )
+        reversed_latents_w_fft = torch.fft.fftshift(
+            torch.fft.fft2(reversed_latents_w), dim=(-1, -2)
+        )
         target_patch = gt_patch
-    elif 'seed' in args.w_measurement:
+    elif "seed" in args.w_measurement:
         reversed_latents_no_w_fft = reversed_latents_no_w
         reversed_latents_w_fft = reversed_latents_w
         target_patch = gt_patch
     else:
-        NotImplementedError(f'w_measurement: {args.w_measurement}')
+        NotImplementedError(f"w_measurement: {args.w_measurement}")
 
-    if 'l1' in args.w_measurement:
-        no_w_metric = torch.abs(reversed_latents_no_w_fft[watermarking_mask] - target_patch[watermarking_mask]).mean().item()
-        w_metric = torch.abs(reversed_latents_w_fft[watermarking_mask] - target_patch[watermarking_mask]).mean().item()
+    if "l1" in args.w_measurement:
+        no_w_metric, w_metric = [], []
+        for i in range(watermarking_mask.size(0)):
+            no_w_metric.append(
+                torch.abs(
+                    reversed_latents_no_w_fft[i][watermarking_mask[i]]
+                    - target_patch[i][watermarking_mask[i]]
+                )
+                .mean()
+                .item()
+            )
+            w_metric.append(
+                torch.abs(
+                    reversed_latents_w_fft[i][watermarking_mask[i]]
+                    - target_patch[i][watermarking_mask[i]]
+                )
+                .mean()
+                .item()
+            )
     else:
-        NotImplementedError(f'w_measurement: {args.w_measurement}')
+        NotImplementedError(f"w_measurement: {args.w_measurement}")
 
     return no_w_metric, w_metric
