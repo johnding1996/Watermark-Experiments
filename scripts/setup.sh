@@ -5,6 +5,8 @@ pip install --upgrade pip ipython jupyter ipywidgets
 # Install dependences (CUDA 12.1)
 pip install torch torchvision torchaudio
 pip install transformers diffusers datasets scikit-learn matplotlib imageio
+# Setup git
+git config --global user.name "mcding" && git config --global user.email "mcding@umd.edu"
 # Setup wandb
 pip install wandb
 wandb login e66105607bb979a5e6e49a3d5d4ce02894398354
