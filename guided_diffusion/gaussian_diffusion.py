@@ -574,6 +574,8 @@ class GaussianDiffusion:
             denoised_fn=denoised_fn,
             model_kwargs=model_kwargs,
         )
+        # We do not have this part in the reverse sample function, so should not be used yet
+        assert cond_fn is None
         if cond_fn is not None:
             out = self.condition_score(cond_fn, out, x, t, model_kwargs=model_kwargs)
 
@@ -598,11 +600,6 @@ class GaussianDiffusion:
             (t != 0).float().view(-1, *([1] * (len(x.shape) - 1)))
         )  # no noise when t == 0
         sample = mean_pred + nonzero_mask * sigma * noise
-        # TODO
-        if t <= 3:
-            print(
-                f"t={t.item()}, alpha_prev={alpha_bar_prev[0,0,0,0].item()}, alpha_next={alpha_bar[0,0,0,0].item()}, a={out['pred_xstart'][0,0,0,0].item()}, b={eps[0,0,0,0].item()}, in={x[0,0,0,0].item()}, out={sample[0,0,0,0].item()}"
-            )
         return {"sample": sample, "pred_xstart": out["pred_xstart"]}
 
     def ddim_reverse_sample(
@@ -640,11 +637,6 @@ class GaussianDiffusion:
             out["pred_xstart"] * th.sqrt(alpha_bar_next)
             + th.sqrt(1 - alpha_bar_next) * eps
         )
-        # TODO
-        if t <= 3:
-            print(
-                f"t={t.item()}, alpha_prev={None}, alpha_next={alpha_bar_next[0,0,0,0].item()}, a={out['pred_xstart'][0,0,0,0].item()}, b={eps[0,0,0,0].item()}, in={x[0,0,0,0].item()}, out={mean_pred[0,0,0,0].item()}"
-            )
         return {"sample": mean_pred, "pred_xstart": out["pred_xstart"]}
 
     def ddim_reverse_sample_loop(

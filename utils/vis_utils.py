@@ -1,12 +1,24 @@
+import numpy as np
 import matplotlib.pyplot as plt
 import imageio
 from io import BytesIO
+from PIL import Image
+from IPython import display
+import time
 from .data_utils import unnormalize_and_to_pil
+
+plt.rcParams.update({"figure.max_open_warning": 0})
 
 
 # Visualize image grid
 def visualize_image_grid(
-    images, col_headers, row_headers, fontsize=10, column_first=False
+    images,
+    col_headers,
+    row_headers,
+    fontsize=10,
+    column_first=False,
+    title=None,
+    title_fontsize=10,
 ):
     # Subplot
     if column_first:
@@ -18,36 +30,47 @@ def visualize_image_grid(
     for i in range(num_rows):
         for j in range(num_cols):
             image = images[i][j]
-            if num_rows > 1 and num_cols > 1:
-                axs[i, j].imshow(image)
-                axs[i, j].axis("off")
-            else:
-                ax = axs[i] if num_cols == 1 else axs[j]
-                ax.imshow(image)
-                ax.axis("off")
+            ax = (
+                axs[i][j]
+                if (num_rows > 1 and num_cols > 1)
+                else (axs[i] if num_cols == 1 else axs[j])
+            )
+            ax.imshow(image)
+            ax.axis("off")
+    plt.tight_layout()
     # Column headers
     for j, col in enumerate(col_headers):
-        fig.text(
-            (2 * j + 2 * 0.85) / (2 * num_cols + 0.85),
-            1.0,
-            col,
-            ha="center",
-            va="center",
-            fontsize=fontsize,
+        ax = (
+            axs[0, j]
+            if (num_rows > 1 and num_cols > 1)
+            else (axs[j] if num_rows == 1 else axs[0])
         )
+        bbox = ax.get_window_extent().transformed(fig.transFigure.inverted())
+        x_center = (bbox.x0 + bbox.x1) / 2
+        fig.text(x_center, 1.0, col, ha="center", va="center", fontsize=fontsize)
     # Row headers
     for i, row in enumerate(row_headers):
+        ax = axs[i][0] if num_cols > 1 else axs[i]
+        bbox = ax.get_window_extent().transformed(fig.transFigure.inverted())
+        y_center = (bbox.y0 + bbox.y1) / 2
+        fig.text(0, y_center, row, ha="right", va="center", fontsize=fontsize)
+    # Determine the leftmost x-coordinate from the row headers
+    leftmost_x = min(
+        [t.get_window_extent().x0 for t in fig.texts if t.get_text() in row_headers]
+    )
+    title_x = leftmost_x / fig.dpi / fig.get_figwidth()
+    # Determine the uppermost y-coordinate from the column headers
+    uppermost_y = max(
+        [t.get_window_extent().y1 for t in fig.texts if t.get_text() in col_headers]
+    )
+    title_y = (
+        uppermost_y / fig.dpi / fig.get_figheight() + 0.01
+    )  # adding a small offset
+    # Add title
+    if title:
         fig.text(
-            0,
-            (2 * num_rows - 2 * i - 0.75) / (2 * num_rows + 0.75),
-            row,
-            ha="right",
-            va="center",
-            fontsize=fontsize,
+            title_x, title_y, title, ha="left", va="bottom", fontsize=title_fontsize
         )
-    # Plot and return
-    plt.tight_layout()
-    plt.subplots_adjust(top=0.95, left=0.1)
     return fig
 
 
@@ -102,15 +125,59 @@ def visualize_imagenet_subset(dataset, class_names, n_classes=5, n_samples_per_c
     return visualize_image_grid(images, col_headers, row_headers, fontsize=10)
 
 
-# Make a GIF with list of matplotlib figures
-def make_gif(figs, filepath, loop=1, duration=0.5):
+# Display the image in Jupyter notebook
+def display_media(file_path):
+    # Determine the file extension
+    file_ext = file_path.split(".")[-1].lower()
+
+    if file_ext in ["jpg", "jpeg", "png", "bmp"]:
+        display.display(display.Image(filename=file_path))
+    elif file_ext == "gif":
+        # For GIFs, embed them in an HTML image tag with a unique timestamp to avoid caching issues
+        display.display(display.HTML(f'<img src="{file_path}?{time.time()}">'))
+    else:
+        print(f"Unsupported file type: {file_ext}")
+
+
+# Save figure to buffer
+def save_figure_to_buffer(fig, dpi=160):
+    buf = BytesIO()
+    fig.savefig(buf, format="png", dpi=dpi, bbox_inches="tight")
+    buf.seek(0)
+    return buf
+
+
+# Save figure to PIL
+def save_figure_to_pil(fig, dpi=160):
+    return Image.open(save_figure_to_buffer(fig, dpi))
+
+
+# Concatenate figures into one large figure
+def concatenate_figures(figs, vertical=True, save_path=None, display=False):
     imageio_images = []
     for fig in figs:
-        # Save figure to the stream in PNG format
-        buf = BytesIO()
-        # Save figure to the stream in PNG format
-        fig.savefig(buf, format="png", dpi=160, bbox_inches="tight")
-        buf.seek(0)
-        # Read image from the stream
-        imageio_images.append(imageio.imread(buf))
-    imageio.mimsave(filepath, imageio_images, loop=loop, duration=duration)
+        imageio_images.append(imageio.imread(save_figure_to_buffer(fig)))
+    if vertical:
+        concatenated_img = np.vstack(imageio_images)
+    else:
+        concatenated_img = np.hstack(imageio_images)
+    # Create a new figure with the concatenated image
+    fig, ax = plt.subplots(
+        figsize=(concatenated_img.shape[1] / 160, concatenated_img.shape[0] / 160)
+    )
+    ax.axis("off")
+    ax.imshow(concatenated_img, aspect="auto")
+    if save_path:
+        plt.savefig(save_path, dpi=160, bbox_inches="tight", pad_inches=0)
+    if display:
+        display_media(save_path)
+
+
+# Make a GIF with list of matplotlib figures
+def make_gif(figs, save_path, loop=1, duration=0.5, display=False):
+    imageio_images = []
+    for fig in figs:
+        imageio_images.append(imageio.imread(save_figure_to_buffer(fig)))
+    imageio.mimsave(save_path, imageio_images, loop=loop, duration=duration)
+    if display:
+        display_media(save_path)

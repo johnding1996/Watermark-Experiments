@@ -1,4 +1,3 @@
-from .model_utils import load_guided_diffusion_model
 from .data_utils import (
     normalize_tensor,
     unnormalize_tensor,
@@ -12,6 +11,9 @@ from .vis_utils import (
     visualize_image_grid,
     visualize_image_list,
     visualize_imagenet_subset,
+    save_figure_to_buffer,
+    save_figure_to_pil,
+    concatenate_figures,
     make_gif,
 )
 from .optim_utils import set_random_seed

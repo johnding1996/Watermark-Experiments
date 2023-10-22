@@ -11,7 +11,7 @@ from .optim_utils import (
     inject_watermark,
     eval_watermark,
 )
-from utils.data_utils import unnormalize_and_to_pil
+from utils.data_utils import to_tensor_and_normalize, unnormalize_and_to_pil
 
 
 # Guided diffusion without watermark
@@ -112,6 +112,8 @@ def guided_diffusion_with_watermark(
     assert isinstance(labels, list) and all(
         isinstance(label, int) and 0 <= label < NUM_CLASSES for label in labels
     )
+    # Assert key and message are on the same device as the model
+    assert keys.device == messages.device == next(model.parameters()).device
     # Can either use the same key or message for all images, or use different keys or messages for different images
     if keys.size()[0] == 1:
         keys = keys.repeat(len(labels), 1, 1, 1)
@@ -217,7 +219,20 @@ def reverse_guided_diffusion(
 def detect_evaluate_watermark(
     reversed_latents_wo, reversed_latents_w, keys, messages, tree_ring_paras, image_size
 ):
-    # To evaluate, images with and without watermark should appear in pairs
+    # Assert key and message are on the same device
+    assert keys.device == messages.device
+    # Check whether the inputs are PIL images
+    if isinstance(reversed_latents_wo[0], Image.Image):
+        reversed_latents_wo = to_tensor_and_normalize(
+            reversed_latents_wo, norm_type="Naive"
+        ).to(keys.device)
+        reversed_latents_w = to_tensor_and_normalize(
+            reversed_latents_w, norm_type="Naive"
+        ).to(keys.device)
+    else:
+        reversed_latents_wo = reversed_latents_wo.to(keys.device)
+        reversed_latents_w = reversed_latents_w.to(keys.device)
+    # To evaluate, currently we require images with and without watermark appear in pairs
     assert len(reversed_latents_wo) == len(reversed_latents_w)
     # Can either use the same key or message for all images, or use different keys or messages for different images
     if keys.size()[0] == 1:
@@ -236,7 +251,6 @@ def detect_evaluate_watermark(
     distances_wo, distances_w = eval_watermark(
         reversed_latents_wo, reversed_latents_w, keys, messages, tree_ring_args
     )
-    print(distances_wo, distances_w)
     # Calculate the AUROC scores and related
     y_true = [1] * len(distances_wo) + [0] * len(distances_w)
     y_score = distances_wo + distances_w
