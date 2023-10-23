@@ -60,7 +60,7 @@ def guided_diffusion_without_watermark(
                 output.append(sample["sample"])
             else:
                 output.append(
-                    unnormalize_and_to_pil(sample["sample"], norm_type="Naive")
+                    unnormalize_and_to_pil(sample["sample"], norm_type="naive")
                 )
         return output
 
@@ -154,7 +154,7 @@ def guided_diffusion_with_watermark(
                 output.append(sample["sample"])
             else:
                 output.append(
-                    unnormalize_and_to_pil(sample["sample"], norm_type="Naive")
+                    unnormalize_and_to_pil(sample["sample"], norm_type="naive")
                 )
         return output
 
@@ -194,7 +194,7 @@ def reverse_guided_diffusion(
         if not return_image:
             return output
         else:
-            return unnormalize_and_to_pil(output, norm_type="Naive")
+            return unnormalize_and_to_pil(output, norm_type="naive")
     else:
         output = []
         for sample in diffusion.ddim_reverse_sample_loop_progressive(
@@ -210,7 +210,7 @@ def reverse_guided_diffusion(
                 output.append(sample["sample"])
             else:
                 output.append(
-                    unnormalize_and_to_pil(sample["sample"], norm_type="Naive")
+                    unnormalize_and_to_pil(sample["sample"], norm_type="naive")
                 )
         return output
 
@@ -224,10 +224,10 @@ def detect_evaluate_watermark(
     # Check whether the inputs are PIL images
     if isinstance(reversed_latents_wo[0], Image.Image):
         reversed_latents_wo = to_tensor_and_normalize(
-            reversed_latents_wo, norm_type="Naive"
+            reversed_latents_wo, norm_type="naive"
         ).to(keys.device)
         reversed_latents_w = to_tensor_and_normalize(
-            reversed_latents_w, norm_type="Naive"
+            reversed_latents_w, norm_type="naive"
         ).to(keys.device)
     else:
         reversed_latents_wo = reversed_latents_wo.to(keys.device)

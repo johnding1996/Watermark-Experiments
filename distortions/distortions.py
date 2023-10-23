@@ -47,7 +47,7 @@ def apply_distortion(
 ):
     # Convert images to PIL images if they are tensors
     if not isinstance(images[0], Image.Image):
-        images = unnormalize_and_to_pil(images, norm_type="Naive")
+        images = unnormalize_and_to_pil(images, norm_type="naive")
     # Check if strength is relative and convert if needed
     if relative_strength:
         strength = relative_strength_to_absolute(strength, distortion_type)
@@ -65,7 +65,7 @@ def apply_distortion(
             seed += 1
     # Convert to tensors if needed
     if not return_image:
-        distorted_images = to_tensor_and_normalize(distorted_images, norm_type="Naive")
+        distorted_images = to_tensor_and_normalize(distorted_images, norm_type="naive")
     return distorted_images
 
 

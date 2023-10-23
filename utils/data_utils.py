@@ -6,13 +6,13 @@ import json
 
 # Normalize image tensors
 def normalize_tensor(images, norm_type):
-    assert norm_type in ["ImageNet", "Naive"]
+    assert norm_type in ["imagenet", "naive"]
     # Two possible normalization conventions
-    if norm_type == "ImageNet":
+    if norm_type == "imagenet":
         mean = [0.485, 0.456, 0.406]
         std = [0.229, 0.224, 0.225]
         normalize = transforms.Normalize(mean, std)
-    elif norm_type == "Naive":
+    elif norm_type == "naive":
         mean = [0.5, 0.5, 0.5]
         std = [0.5, 0.5, 0.5]
         normalize = transforms.Normalize(mean, std)
@@ -23,16 +23,16 @@ def normalize_tensor(images, norm_type):
 
 # Unnormalize image tensors
 def unnormalize_tensor(images, norm_type):
-    assert norm_type in ["ImageNet", "Naive"]
+    assert norm_type in ["imagenet", "naive"]
     # Two possible normalization conventions
-    if norm_type == "ImageNet":
+    if norm_type == "imagenet":
         mean = [0.485, 0.456, 0.406]
         std = [0.229, 0.224, 0.225]
         unnormalize = transforms.Normalize(
             (-mean[0] / std[0], -mean[1] / std[1], -mean[2] / std[2]),
             (1 / std[0], 1 / std[1], 1 / std[2]),
         )
-    elif norm_type == "Naive":
+    elif norm_type == "naive":
         mean = [0.5, 0.5, 0.5]
         std = [0.5, 0.5, 0.5]
         unnormalize = transforms.Normalize(
@@ -73,8 +73,18 @@ def get_imagenet_class_names(labels=None):
         return [cid_to_wnid_and_words[str(cid)][1] for cid in labels]
 
 
-# Load dataset and class names
-def load_imagenet_subset(dataset_name):
+# Get ImageNet wnids
+def get_imagenet_wnids(labels=None):
+    with open("./datasets/imagenet_class_index.json", "r") as file:
+        cid_to_wnid_and_words = json.load(file)
+    if labels is None:
+        return {int(cid): wnid for cid, (wnid, words) in cid_to_wnid_and_words.items()}
+    else:
+        return [cid_to_wnid_and_words[str(cid)][0] for cid in labels]
+
+
+# Load imagenet subset and class names
+def load_imagenet_subset(dataset_name, norm_type="naive"):
     assert dataset_name in ["Tiny-ImageNet", "Imagenette"]
     # Load WordNet IDs and class names
     with open("./datasets/tiny-imagenet-200/wnids.txt", "r") as f:
@@ -90,7 +100,7 @@ def load_imagenet_subset(dataset_name):
         data_dir = "./datasets/tiny-imagenet-200"
         dataset = datasets.ImageFolder(
             f"{data_dir}/train",
-            lambda x: to_tensor_and_normalize([x], norm_type="ImageNet"),
+            lambda x: to_tensor_and_normalize([x], norm_type=norm_type),
         )
         assert len(dataset) == 100000
         # Tiny-ImageNet class names
@@ -108,7 +118,7 @@ def load_imagenet_subset(dataset_name):
                         256, interpolation=transforms.InterpolationMode.BILINEAR
                     ),
                     transforms.CenterCrop(256),
-                    lambda x: to_tensor_and_normalize([x], norm_type="ImageNet"),
+                    lambda x: to_tensor_and_normalize([x], norm_type=norm_type),
                 ]
             ),
         )
@@ -119,6 +129,7 @@ def load_imagenet_subset(dataset_name):
     return dataset, class_names
 
 
+# Load tree-ring watermarked imagenet subset and class names
 # Sample images and labels from imagenet subsets
 def sample_images_and_labels(train_size, test_size, dataset, exp_rand_seed):
     assert (train_size + test_size) <= len(dataset)

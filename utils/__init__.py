@@ -4,6 +4,7 @@ from .data_utils import (
     to_tensor_and_normalize,
     unnormalize_and_to_pil,
     get_imagenet_class_names,
+    get_imagenet_wnids,
     load_imagenet_subset,
     sample_images_and_labels,
 )

@@ -102,7 +102,9 @@ def visualize_image_list(images, titles, max_per_row=4, fontsize=10):
 
 
 # Visualize a imagenet subset and check class names
-def visualize_imagenet_subset(dataset, class_names, n_classes=5, n_samples_per_class=5):
+def visualize_imagenet_subset(
+    dataset, class_names, n_classes=5, n_samples_per_class=5, norm_type="naive"
+):
     images = [
         [
             unnormalize_and_to_pil(
@@ -114,7 +116,7 @@ def visualize_imagenet_subset(dataset, class_names, n_classes=5, n_samples_per_c
                     )
                     + sid
                 ][0],
-                norm_type="ImageNet",
+                norm_type=norm_type,
             )[0]
             for sid in range(n_samples_per_class)
         ]
