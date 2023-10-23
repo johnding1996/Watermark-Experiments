@@ -2,6 +2,7 @@ import torch
 from torchvision import datasets, transforms
 from PIL import Image
 import json
+from .optim_utils import set_random_seed
 
 
 # Normalize image tensors
@@ -131,12 +132,15 @@ def load_imagenet_subset(dataset_name, norm_type="naive"):
 
 # Load tree-ring watermarked imagenet subset and class names
 # Sample images and labels from imagenet subsets
-def sample_images_and_labels(train_size, test_size, dataset, exp_rand_seed):
+def sample_images_and_labels(train_size, test_size, dataset, exp_rand_seed=None):
     assert (train_size + test_size) <= len(dataset)
-    # Reset random seed
-    torch.manual_seed(exp_rand_seed)
-    # Random sample without replacement
-    indices = torch.randperm(len(dataset))[: train_size + test_size]
+    if exp_rand_seed is not None:
+        set_random_seed(exp_rand_seed)
+        # Random sample without replacement
+        indices = torch.randperm(len(dataset))[: train_size + test_size]
+    else:
+        # Sequential sample
+        indices = torch.arange(train_size + test_size, dtype=torch.long)
     images = [dataset[idx][0] for idx in indices]
     labels = [dataset[idx][1] for idx in indices]
     return (
@@ -145,3 +149,28 @@ def sample_images_and_labels(train_size, test_size, dataset, exp_rand_seed):
         images[-test_size:],
         labels[-test_size:],
     )
+
+
+# Load imagenet guided diffusion generated images and class names
+def load_imagenet_guided(image_size, dataset_template, norm_type="naive"):
+    assert image_size in [64, 256]
+    assert dataset_template in ["Tiny-ImageNet", "Imagenette"]
+    # Load WordNet IDs and class names
+    wnid_to_words = {}
+    with open("./datasets/tiny-imagenet-200/words.txt", "r") as f:
+        for line in f.readlines():
+            wnid, words = line.strip().split("\t")
+            wnid_to_words[wnid] = words
+    # Load dataset
+    data_dir = f"./datasets/imagenet_guided_{image_size}_{dataset_template.lower()}"
+
+    dataset = datasets.ImageFolder(
+        f"{data_dir}/train",
+        lambda x: to_tensor_and_normalize([x], norm_type=norm_type),
+    )
+    # ImageNet class names
+    class_names = [wnid_to_words[wnid] for wnid in dataset.classes]
+    # Check sizes
+    assert len(set(label for _, label in dataset)) == len(class_names)
+
+    return dataset, class_names

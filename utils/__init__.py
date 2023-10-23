@@ -7,6 +7,7 @@ from .data_utils import (
     get_imagenet_wnids,
     load_imagenet_subset,
     sample_images_and_labels,
+    load_imagenet_guided,
 )
 from .vis_utils import (
     visualize_image_grid,
