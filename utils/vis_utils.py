@@ -139,6 +139,11 @@ def display_media(file_path):
         print(f"Unsupported file type: {file_ext}")
 
 
+# Save figure
+def save_figure_to_file(fig, save_path, dpi=160):
+    fig.savefig(save_path, dpi=dpi, bbox_inches="tight", pad_inches=0)
+
+
 # Save figure to buffer
 def save_figure_to_buffer(fig, dpi=160):
     buf = BytesIO()

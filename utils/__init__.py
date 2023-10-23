@@ -11,6 +11,7 @@ from .vis_utils import (
     visualize_image_grid,
     visualize_image_list,
     visualize_imagenet_subset,
+    save_figure_to_file,
     save_figure_to_buffer,
     save_figure_to_pil,
     concatenate_figures,

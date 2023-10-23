@@ -4,14 +4,14 @@ from sklearn import metrics
 from PIL import Image
 from utils import set_random_seed
 from collections import namedtuple
-from guided_diffusion.script_util import NUM_CLASSES
 from .optim_utils import (
     get_watermarking_pattern,
     get_watermarking_mask,
     inject_watermark,
     eval_watermark,
 )
-from utils.data_utils import to_tensor_and_normalize, unnormalize_and_to_pil
+from guided_diffusion.script_util import NUM_CLASSES
+from utils import to_tensor_and_normalize, unnormalize_and_to_pil
 
 
 # Guided diffusion without watermark

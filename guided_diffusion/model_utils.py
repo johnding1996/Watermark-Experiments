@@ -1,5 +1,5 @@
 import torch
-from guided_diffusion.script_util import (
+from .script_util import (
     model_and_diffusion_defaults,
     create_model_and_diffusion,
 )
