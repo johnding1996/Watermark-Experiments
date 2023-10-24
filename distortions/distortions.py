@@ -6,7 +6,7 @@ import numpy as np
 import torch
 import io
 
-from utils import set_random_seed, to_tensor_and_normalize, unnormalize_and_to_pil
+from utils import set_random_seed, to_tensor, to_pil
 
 
 distortion_strength_paras = dict(
@@ -47,7 +47,7 @@ def apply_distortion(
 ):
     # Convert images to PIL images if they are tensors
     if not isinstance(images[0], Image.Image):
-        images = unnormalize_and_to_pil(images, norm_type="naive")
+        images = to_pil(images)
     # Check if strength is relative and convert if needed
     if relative_strength:
         strength = relative_strength_to_absolute(strength, distortion_type)
@@ -65,7 +65,7 @@ def apply_distortion(
             seed += 1
     # Convert to tensors if needed
     if not return_image:
-        distorted_images = to_tensor_and_normalize(distorted_images, norm_type="naive")
+        distorted_images = to_tensor(distorted_images)
     return distorted_images
 
 
@@ -110,12 +110,12 @@ def apply_single_distortion(image, distortion_type, strength=None, distortion_se
             if strength is not None
             else random.uniform(*distortion_strength_paras["erasing"])
         )
-        image = to_tensor_and_normalize([image], norm_type=None)
+        image = to_tensor([image], norm_type=None)
         i, j, h, w, v = T.RandomErasing.get_params(
             image, scale=(scale, scale), ratio=(1, 1), value=[0]
         )
         distorted_image = F.erase(image, i, j, h, w, v)
-        distorted_image = unnormalize_and_to_pil(distorted_image, norm_type=None)[0]
+        distorted_image = to_pil(distorted_image, norm_type=None)[0]
 
     elif distortion_type == "brightness":
         factor = (
@@ -149,11 +149,9 @@ def apply_single_distortion(image, distortion_type, strength=None, distortion_se
             if strength is not None
             else random.uniform(*distortion_strength_paras["noise"])
         )
-        image = to_tensor_and_normalize([image], norm_type=None)
+        image = to_tensor([image], norm_type=None)
         noise = torch.randn(image.size()) * std
-        distorted_image = unnormalize_and_to_pil(
-            (image + noise).clamp(0, 1), norm_type=None
-        )[0]
+        distorted_image = to_pil((image + noise).clamp(0, 1), norm_type=None)[0]
 
     elif distortion_type == "compression":
         quality = (

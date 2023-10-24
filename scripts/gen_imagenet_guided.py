@@ -154,7 +154,7 @@ def main():
         "--image_size",
         type=int,
         choices=[64, 256],
-        default=64,
+        default=256,
         help="Image size",
     )
 
@@ -163,7 +163,7 @@ def main():
         "--dataset_template",
         type=str,
         choices=["ImageNet", "Tiny-ImageNet", "Imagenette"],
-        default="Tiny-ImageNet",
+        default="Imagenette",
         help="Dataset template",
     )
 
@@ -171,7 +171,7 @@ def main():
     parser.add_argument(
         "--num_diffusion_seeds",
         type=int,
-        default=1,
+        default=100,
         help="Number of diffusion seeds (positive integer)",
     )
 

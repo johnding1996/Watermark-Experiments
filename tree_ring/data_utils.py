@@ -1,9 +1,7 @@
 import os
 import torch
 from torchvision.datasets import ImageFolder
-from torchvision.transforms import transforms
-from torch.utils.data import DataLoader
-from utils.data_utils import to_tensor_and_normalize
+from utils import to_tensor
 
 
 class MultiLabelImageFolder(ImageFolder):
@@ -51,8 +49,13 @@ class MultiLabelImageFolder(ImageFolder):
         return sample, tuple(label_idxs)
 
 
-def load_tree_ring_watermarked_imagenet_subset(
-    image_size, dataset_template, num_key_seeds, num_message_seeds, norm_type="naive"
+def load_tree_ring_guided(
+    image_size,
+    dataset_template,
+    num_key_seeds,
+    num_message_seeds,
+    convert_to_tensor=True,
+    norm_type="naive",
 ):
     assert image_size in [64, 256]
     assert dataset_template in ["Tiny-ImageNet", "Imagenette"]
@@ -67,7 +70,7 @@ def load_tree_ring_watermarked_imagenet_subset(
 
     dataset = MultiLabelImageFolder(
         f"{data_dir}/train",
-        lambda x: to_tensor_and_normalize([x], norm_type=norm_type),
+        lambda x: to_tensor([x], norm_type=norm_type) if convert_to_tensor else x,
     )
     # ImageNet class names
     class_names = [

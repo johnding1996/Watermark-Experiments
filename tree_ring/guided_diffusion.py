@@ -4,6 +4,8 @@ from sklearn import metrics
 from PIL import Image
 from utils import set_random_seed
 from collections import namedtuple
+
+from utils import to_tensor, to_pil
 from .optim_utils import (
     get_watermarking_pattern,
     get_watermarking_mask,
@@ -11,7 +13,6 @@ from .optim_utils import (
     eval_watermark,
 )
 from guided_diffusion.script_util import NUM_CLASSES
-from utils import to_tensor_and_normalize, unnormalize_and_to_pil
 
 
 # Guided diffusion without watermark
@@ -59,9 +60,7 @@ def guided_diffusion_without_watermark(
             if not return_image:
                 output.append(sample["sample"])
             else:
-                output.append(
-                    unnormalize_and_to_pil(sample["sample"], norm_type="naive")
-                )
+                output.append(to_pil(sample["sample"]))
         return output
 
 
@@ -153,9 +152,7 @@ def guided_diffusion_with_watermark(
             if not return_image:
                 output.append(sample["sample"])
             else:
-                output.append(
-                    unnormalize_and_to_pil(sample["sample"], norm_type="naive")
-                )
+                output.append(to_pil(sample["sample"]))
         return output
 
 
@@ -194,7 +191,7 @@ def reverse_guided_diffusion(
         if not return_image:
             return output
         else:
-            return unnormalize_and_to_pil(output, norm_type="naive")
+            return to_pil(output)
     else:
         output = []
         for sample in diffusion.ddim_reverse_sample_loop_progressive(
@@ -209,9 +206,7 @@ def reverse_guided_diffusion(
             if not return_image:
                 output.append(sample["sample"])
             else:
-                output.append(
-                    unnormalize_and_to_pil(sample["sample"], norm_type="naive")
-                )
+                output.append(to_pil(sample["sample"]))
         return output
 
 
@@ -223,12 +218,12 @@ def detect_evaluate_watermark(
     assert keys.device == messages.device
     # Check whether the inputs are PIL images
     if isinstance(reversed_latents_wo[0], Image.Image):
-        reversed_latents_wo = to_tensor_and_normalize(
-            reversed_latents_wo, norm_type="naive"
-        ).to(keys.device)
-        reversed_latents_w = to_tensor_and_normalize(
-            reversed_latents_w, norm_type="naive"
-        ).to(keys.device)
+        reversed_latents_wo = to_tensor(reversed_latents_wo, norm_type="naive").to(
+            keys.device
+        )
+        reversed_latents_w = to_tensor(reversed_latents_w, norm_type="naive").to(
+            keys.device
+        )
     else:
         reversed_latents_wo = reversed_latents_wo.to(keys.device)
         reversed_latents_w = reversed_latents_w.to(keys.device)

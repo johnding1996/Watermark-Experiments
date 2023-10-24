@@ -6,4 +6,4 @@ from .guided_diffusion import (
     reverse_guided_diffusion,
     detect_evaluate_watermark,
 )
-from .data_utils import load_tree_ring_watermarked_imagenet_subset
+from .data_utils import load_tree_ring_guided

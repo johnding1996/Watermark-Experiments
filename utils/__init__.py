@@ -1,13 +1,17 @@
-from .data_utils import (
+from .image_utils import (
     normalize_tensor,
     unnormalize_tensor,
-    to_tensor_and_normalize,
-    unnormalize_and_to_pil,
+    to_tensor,
+    to_pil,
+)
+from .data_utils import (
     get_imagenet_class_names,
     get_imagenet_wnids,
     load_imagenet_subset,
-    sample_images_and_labels,
+    sample_train_and_test_sets,
     load_imagenet_guided,
+    sample_images_by_label_cond,
+    sample_images_by_label_set,
 )
 from .vis_utils import (
     visualize_image_grid,
@@ -19,4 +23,10 @@ from .vis_utils import (
     concatenate_figures,
     make_gif,
 )
-from .optim_utils import set_random_seed
+from .exp_utils import set_random_seed
+from .io_utils import (
+    tuples_to_lists,
+    lists_to_tuples,
+    format_mean_and_std,
+    format_mean_and_std_list,
+)

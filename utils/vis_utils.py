@@ -5,7 +5,7 @@ from io import BytesIO
 from PIL import Image
 from IPython import display
 import time
-from .data_utils import unnormalize_and_to_pil
+from .image_utils import to_pil
 
 plt.rcParams.update({"figure.max_open_warning": 0})
 
@@ -107,7 +107,7 @@ def visualize_imagenet_subset(
 ):
     images = [
         [
-            unnormalize_and_to_pil(
+            to_pil(
                 dataset[
                     next(
                         idx
