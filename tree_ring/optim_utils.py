@@ -245,7 +245,7 @@ def eval_watermark(
 
     if "l1" in args.w_measurement:
         no_w_metric, w_metric = [], []
-        for i in range(watermarking_mask.size(0)):
+        for i in range(reversed_latents_no_w_fft.size(0)):
             no_w_metric.append(
                 torch.abs(
                     reversed_latents_no_w_fft[i][watermarking_mask[i]]
@@ -254,6 +254,7 @@ def eval_watermark(
                 .mean()
                 .item()
             )
+        for i in range(reversed_latents_w_fft.size(0)):
             w_metric.append(
                 torch.abs(
                     reversed_latents_w_fft[i][watermarking_mask[i]]

@@ -230,7 +230,7 @@ def main():
         "--image_size",
         type=int,
         choices=[64, 256],
-        default=256,
+        default=64,
         help="Image size",
     )
 
@@ -239,7 +239,7 @@ def main():
         "--dataset_template",
         type=str,
         choices=["ImageNet", "Tiny-ImageNet", "Imagenette"],
-        default="Imagenette",
+        default="Tiny-ImageNet",
         help="Dataset template",
     )
 

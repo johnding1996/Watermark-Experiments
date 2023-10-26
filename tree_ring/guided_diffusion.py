@@ -227,18 +227,15 @@ def detect_evaluate_watermark(
     else:
         reversed_latents_wo = reversed_latents_wo.to(keys.device)
         reversed_latents_w = reversed_latents_w.to(keys.device)
-    # To evaluate, currently we require images with and without watermark appear in pairs
-    assert len(reversed_latents_wo) == len(reversed_latents_w)
+
     # Can either use the same key or message for all images, or use different keys or messages for different images
+    max_length = max(reversed_latents_wo.size()[0], reversed_latents_w.size()[0])
     if keys.size()[0] == 1:
-        keys = keys.repeat(len(reversed_latents_wo), 1, 1, 1)
+        keys = keys.repeat(max_length, 1, 1, 1)
     if messages.size()[0] == 1:
-        messages = messages.repeat(len(reversed_latents_wo), 1, 1, 1)
-    assert (
-        keys.size()
-        == messages.size()
-        == (len(reversed_latents_wo), 3, image_size, image_size)
-    )
+        messages = messages.repeat(max_length, 1, 1, 1)
+    assert keys.size() == messages.size() == (max_length, 3, image_size, image_size)
+
     # Pack dict into namedtuple so that it is compatible with args
     tree_ring_args = namedtuple("Args", tree_ring_paras.keys())(**tree_ring_paras)
 

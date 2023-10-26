@@ -31,7 +31,7 @@ def train_classifier(
     optimizer = optim.Adam(model.parameters(), lr=learning_rate)
     criterion = nn.CrossEntropyLoss()
     # Train loop
-    for epoch in trange(num_epochs):
+    for epoch in range(num_epochs):
         model.train()
         total_loss = 0.0
         for inputs, labels in train_loader:
@@ -51,6 +51,14 @@ def train_classifier(
 
         if verbose:
             print(
-                f"Epoch [{epoch+1}/{num_epochs}] Loss: {average_loss:.4f} Test ACC: {test_acc:.2f}%"
+                f"Epoch [{epoch+1}/{num_epochs}] Loss: {average_loss:.3e} Test ACC: {test_acc:.2f}%"
             )
+    return model
+
+
+def load_classifier(save_path):
+    model = models.resnet18(weights=models.ResNet18_Weights.DEFAULT)
+    # Change last layer to output 2 classes (for your merged dataset)
+    model.fc = nn.Linear(model.fc.in_features, 2)
+    model.load_state_dict(torch.load(save_path))
     return model

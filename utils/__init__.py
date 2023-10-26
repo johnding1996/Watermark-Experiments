@@ -3,6 +3,7 @@ from .image_utils import (
     unnormalize_tensor,
     to_tensor,
     to_pil,
+    renormalize_tensor,
 )
 from .data_utils import (
     get_imagenet_class_names,

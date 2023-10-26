@@ -64,4 +64,13 @@ def to_pil(images, norm_type="naive"):
 
 # Renormalize image tensors
 def renormalize_tensor(images, in_norm_type=None, out_norm_type=None):
-    pass
+    assert in_norm_type in ["imagenet", "naive"]
+    assert out_norm_type in ["imagenet", "naive"]
+
+    # First unnormalize the tensor using the input normalization type
+    images = unnormalize_tensor(images, in_norm_type)
+
+    # Then normalize the tensor using the output normalization type
+    images = normalize_tensor(images, out_norm_type)
+
+    return images

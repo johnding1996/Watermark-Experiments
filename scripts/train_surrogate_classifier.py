@@ -129,7 +129,7 @@ def main():
     parser.add_argument(
         "--split_ratio",
         type=float,
-        default=0.9,
+        default=0.8,
         help="Split raio.",
     )
     parser.add_argument(
