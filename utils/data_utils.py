@@ -43,7 +43,7 @@ def load_imagenet_subset(dataset_name, convert_to_tensor=True, norm_type="naive"
     # Tiny-ImageNet
     if dataset_name == "Tiny-ImageNet":
         # Tiny-ImageNet dataset
-        data_dir = "./datasets/tiny-imagenet-200"
+        data_dir = "./datasets/imagenet-related/tiny-imagenet-200"
         dataset = datasets.ImageFolder(
             f"{data_dir}/train",
             lambda x: to_tensor([x], norm_type=norm_type) if convert_to_tensor else x,
@@ -55,7 +55,7 @@ def load_imagenet_subset(dataset_name, convert_to_tensor=True, norm_type="naive"
     # Imagenette
     elif dataset_name == "Imagenette":
         # Imagenette dataset
-        data_dir = "./datasets/imagenette2-320"
+        data_dir = "./datasets/imagenet-related/imagenette2-320"
         dataset = datasets.ImageFolder(
             f"{data_dir}/train",
             transforms.Compose(

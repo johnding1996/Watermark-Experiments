@@ -62,7 +62,8 @@ def load_guided_diffusion_model(image_size, device):
     model, diffusion = create_model_and_diffusion(**paras)
     model.load_state_dict(
         torch.load(
-            f"./models/{image_size}x{image_size}_diffusion.pt", map_location=device
+            f"./models/guided-diffusion/{image_size}x{image_size}_diffusion.pt",
+            map_location=device,
         )
     )
     model.to(device)

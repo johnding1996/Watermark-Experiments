@@ -212,7 +212,12 @@ def reverse_guided_diffusion(
 
 # Detect and evaluate watermark
 def detect_evaluate_watermark(
-    reversed_latents_wo, reversed_latents_w, keys, messages, tree_ring_paras, image_size
+    reversed_latents_wo,
+    reversed_latents_w,
+    keys,
+    messages,
+    tree_ring_paras,
+    image_size,
 ):
     # Assert key and message are on the same device
     assert keys.device == messages.device
@@ -246,7 +251,8 @@ def detect_evaluate_watermark(
     # Calculate the AUROC scores and related
     y_true = [1] * len(distances_wo) + [0] * len(distances_w)
     y_score = distances_wo + distances_w
-    fpr, tpr, thresholds = metrics.roc_curve(y_true, y_score, pos_label=1)
+
+    fpr, tpr, thresholds = metrics.roc_curve(y_true, y_score, pos_label=0)
     auc = metrics.auc(fpr, tpr)
     acc = np.max(1 - (fpr + (1 - tpr)) / 2)
     low = tpr[np.where(fpr < 0.01)[0][-1]]
