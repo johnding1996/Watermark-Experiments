@@ -5,9 +5,9 @@
 pip install --upgrade pip ipython jupyter ipywidgets
 # Install dependences (on CUDA 12.1)
 pip install torch torchvision torchaudio
-pip install transformers diffusers accelerate ftfy
+pip install transformers diffusers accelerate ftfy datasets[vision]
 pip install -U xformers --index-url https://download.pytorch.org/whl/cu121
-pip install torchattacks datasets pycocotools scikit-learn scikit-image matplotlib imageio
+pip install torchattacks pycocotools scikit-learn scikit-image matplotlib imageio
 
 # Logins
 # Setup git (remove later)
@@ -38,16 +38,16 @@ mkdir ms-coco && cd ms-coco
 wget http://images.cocodataset.org/zips/val2017.zip && unzip val2017.zip && rm val2017.zip
 wget http://images.cocodataset.org/annotations/annotations_trainval2017.zip && unzip annotations_trainval2017.zip && rm annotations_trainval2017.zip
 cd ..
+# DiffusionDB
+
+
 # Diffusion generated images
 # Guided diffusion generated images
 mkdir guided-diffusion && cd guided-diffusion
-# Guided diffusion checkpoints
 wget --output-document=imagenet_guided_64_tiny-imagenet_50.zip "https://www.dropbox.com/scl/fi/aixqtm6uwpnxlr6gih6zv/imagenet_guided_64_tiny-imagenet_50.zip?rlkey=227jqa72d3kotcwpkre5857pa&dl=1" && unzip imagenet_guided_64_tiny-imagenet_50.zip && rm imagenet_guided_64_tiny-imagenet_50.zip
+wget --output-document=imagenet_guided_256_imagenette_100.zip "https://www.dropbox.com/scl/fi/zri55f21dssf2q406jgdx/imagenet_guided_256_imagenette_100.zip?rlkey=ynxe5omb1qpx97s44evmcnsrf&dl=1" && unzip imagenet_guided_256_imagenette_100.zip && rm imagenet_guided_256_imagenette_100.zip
 cd ..
 
-
-wget --output-document=tree_ring_guided_1k_1m.zip "https://www.dropbox.com/scl/fi/hbw4d853t0hr0tz9o3tjr/tree_ring_guided_1k_1m.zip?rlkey=jmc2hegj1k2deqkm6h7uq9awu&dl=1" && unzip tree_ring_guided_1k_1m.zip && rm tree_ring_guided_1k_1m.zip
-cd ..
 
 # Models
 mkdir models && cd models
