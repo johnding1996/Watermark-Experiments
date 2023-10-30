@@ -9,22 +9,30 @@ from utils import set_random_seed
 from utils import to_pil
 from .pytorch_fid.fid_score import calculate_fid_given_paths
 
-import random, string
+from concurrent.futures import ProcessPoolExecutor
+from PIL import Image
 
 
-# Save images to temp dir
+def save_single_image(args):
+    i, image, temp_dir = args
+    save_path = os.path.join(temp_dir, f"{i}.png")
+    image.save(save_path, "PNG")
+
+
 def save_images_to_temp(images, verbose=False):
     assert isinstance(images, list) and isinstance(images[0], Image.Image)
-    # temp_dir = tempfile.mkdtemp()
-    temp_dir = os.path.join(
-        "/scratch0/mcding/tmp/",
-        "".join(random.choice(string.ascii_lowercase) for _ in range(8)),
-    )
-    assert not os.path.exists(temp_dir)
-    os.makedirs(temp_dir)
-    for i, image in enumerate(images if not verbose else tqdm(images)):
-        save_path = os.path.join(temp_dir, f"{i}.png")
-        image.save(save_path, "PNG")
+    temp_dir = tempfile.mkdtemp()
+
+    # Create list of data to be processed in parallel
+    data_to_process = [(i, image, temp_dir) for i, image in enumerate(images)]
+
+    # Using ProcessPoolExecutor to process images in parallel
+    with ProcessPoolExecutor(max_workers=os.environ.get("NCPUS", 8)) as executor:
+        if verbose:
+            list(tqdm(executor.map(save_single_image, data_to_process)))
+        else:
+            list(executor.map(save_single_image, data_to_process))
+
     return temp_dir
 
 
@@ -44,7 +52,7 @@ def compute_fid(
     if num_workers is not None:
         assert 1 <= num_workers <= os.cpu_count()
     else:
-        num_workers = min(os.cpu_count(), 16)
+        num_workers = min(os.environ.get("NCPUS", 8))
 
     # Check images
     if not isinstance(images1, list):
