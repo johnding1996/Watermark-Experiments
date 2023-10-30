@@ -4,23 +4,31 @@ import tempfile
 import numpy as np
 import torch
 from PIL import Image
-from tqdm import trange
+from tqdm import tqdm, trange
 from utils import set_random_seed
 from utils import to_pil
 from .pytorch_fid.fid_score import calculate_fid_given_paths
 
+import random, string
+
 
 # Save images to temp dir
-def save_images_to_temp(images):
+def save_images_to_temp(images, verbose=False):
     assert isinstance(images, list) and isinstance(images[0], Image.Image)
-    temp_dir = tempfile.mkdtemp()
-    for i, image in enumerate(images):
+    # temp_dir = tempfile.mkdtemp()
+    temp_dir = os.path.join(
+        "/scratch0/mcding/tmp/",
+        "".join(random.choice(string.ascii_lowercase) for _ in range(8)),
+    )
+    assert not os.path.exists(temp_dir)
+    os.makedirs(temp_dir)
+    for i, image in enumerate(images if not verbose else tqdm(images)):
         save_path = os.path.join(temp_dir, f"{i}.png")
         image.save(save_path, "PNG")
     return temp_dir
 
 
-# Calculate FID
+# Compute FID between two sets of images
 def compute_fid(
     images1,
     images2,
@@ -36,7 +44,7 @@ def compute_fid(
     if num_workers is not None:
         assert 1 <= num_workers <= os.cpu_count()
     else:
-        num_workers = min(os.cpu_count(), 8)
+        num_workers = min(os.cpu_count(), 16)
 
     # Check images
     if not isinstance(images1, list):
@@ -49,8 +57,8 @@ def compute_fid(
             images1 = to_pil(images1)
             images2 = to_pil(images2)
         # Save images to temp dir if needed
-        path1 = save_images_to_temp(images1)
-        path2 = save_images_to_temp(images2)
+        path1 = save_images_to_temp(images1, verbose=verbose)
+        path2 = save_images_to_temp(images2, verbose=verbose)
 
     # Calculate FID
     fid_score = calculate_fid_given_paths(
@@ -72,11 +80,12 @@ def compute_fid(
         return fid_score
 
 
+# Compute FID for multiple pairs of subsets
 def compute_fid_repeated(
     images1,
     images2,
-    num_repeats,
-    sample_size,
+    num_repeats=3,
+    sample_size=2048,
     pairwise=False,
     batch_size=50,
     dims=2048,
