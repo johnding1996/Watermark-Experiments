@@ -5,9 +5,28 @@ from io import BytesIO
 from PIL import Image
 from IPython import display
 import time
+import tempfile
 from .image_utils import to_pil
 
 plt.rcParams.update({"figure.max_open_warning": 0})
+
+
+# Save figure to buffer
+def save_figure_to_buffer(fig, dpi=140):
+    buf = BytesIO()
+    fig.savefig(buf, format="png", dpi=dpi, bbox_inches="tight")
+    buf.seek(0)
+    return buf
+
+
+# Save figure to PIL
+def save_figure_to_pil(fig, dpi=140):
+    return Image.open(save_figure_to_buffer(fig, dpi))
+
+
+# Save figure
+def save_figure_to_file(fig, save_path, dpi=140):
+    fig.savefig(save_path, dpi=dpi, bbox_inches="tight", pad_inches=0)
 
 
 # Visualize image grid
@@ -71,7 +90,10 @@ def visualize_image_grid(
         fig.text(
             title_x, title_y, title, ha="left", va="bottom", fontsize=title_fontsize
         )
-    return fig
+    # Plot and return
+    img = save_figure_to_pil(fig)
+    plt.close(fig)
+    return img
 
 
 # Visualize image list
@@ -98,11 +120,62 @@ def visualize_image_list(images, titles, max_per_row=4, fontsize=10):
     # Plot and return
     plt.tight_layout()
     plt.subplots_adjust(top=0.95, left=0.1)
-    return fig
+    # Plot and return
+    img = save_figure_to_pil(fig)
+    plt.close(fig)
+    return img
 
 
-# Visualize a imagenet subset and check class names
-def visualize_imagenet_subset(
+# Display the image in Jupyter notebook
+def display_media(file_path):
+    # Determine the file extension
+    file_ext = file_path.split(".")[-1].lower()
+
+    if file_ext in ["jpg", "jpeg", "png", "bmp"]:
+        display.display(display.Image(filename=file_path))
+    elif file_ext == "gif":
+        # For GIFs, embed them in an HTML image tag with a unique timestamp to avoid caching issues
+        display.display(display.HTML(f'<img src="{file_path}?{time.time()}">'))
+    else:
+        print(f"Unsupported file type: {file_ext}")
+
+
+# Concatenate nested images
+def concatenate_images(images, column_first=False, save_path=None, display=False):
+    if column_first:
+        images = [list(row) for row in zip(*images)]
+    # Concatenate inner lists vertically
+    vertical_concatenated_images = [np.vstack(img_list) for img_list in images]
+    # Concatenate the vertically concatenated images horizontally
+    concatenated_images = np.hstack(vertical_concatenated_images)
+    # Create a new figure with the concatenated image
+    fig, ax = plt.subplots(
+        figsize=(concatenated_images.shape[1] / 140, concatenated_images.shape[0] / 140)
+    )
+    ax.axis("off")
+    ax.imshow(concatenated_images, aspect="auto")
+
+    if save_path:
+        plt.savefig(save_path, dpi=140, bbox_inches="tight", pad_inches=0)
+
+    if display:
+        if save_path:
+            display_media(save_path)
+        else:
+            with tempfile.NamedTemporaryFile(delete=True, suffix=".png") as tmpfile:
+                plt.savefig(tmpfile.name, dpi=140, bbox_inches="tight", pad_inches=0)
+                display_media(tmpfile.name)
+
+
+# Make a GIF with list of imaegs
+def make_gif(images, save_path, loop=1, duration=0.5, display=False):
+    imageio.mimsave(save_path, images, loop=loop, duration=duration)
+    if display:
+        display_media(save_path)
+
+
+# Visualize a supervised dataset and check class names
+def visualize_supervised_dataset(
     dataset, class_names, n_classes=5, n_samples_per_class=5, norm_type="naive"
 ):
     images = [
@@ -125,66 +198,3 @@ def visualize_imagenet_subset(
     col_headers = ["Sample " + str(sid + 1) for sid in range(n_samples_per_class)]
     row_headers = [class_names[cid] for cid in range(n_classes)]
     return visualize_image_grid(images, col_headers, row_headers, fontsize=10)
-
-
-# Display the image in Jupyter notebook
-def display_media(file_path):
-    # Determine the file extension
-    file_ext = file_path.split(".")[-1].lower()
-
-    if file_ext in ["jpg", "jpeg", "png", "bmp"]:
-        display.display(display.Image(filename=file_path))
-    elif file_ext == "gif":
-        # For GIFs, embed them in an HTML image tag with a unique timestamp to avoid caching issues
-        display.display(display.HTML(f'<img src="{file_path}?{time.time()}">'))
-    else:
-        print(f"Unsupported file type: {file_ext}")
-
-
-# Save figure
-def save_figure_to_file(fig, save_path, dpi=160):
-    fig.savefig(save_path, dpi=dpi, bbox_inches="tight", pad_inches=0)
-
-
-# Save figure to buffer
-def save_figure_to_buffer(fig, dpi=160):
-    buf = BytesIO()
-    fig.savefig(buf, format="png", dpi=dpi, bbox_inches="tight")
-    buf.seek(0)
-    return buf
-
-
-# Save figure to PIL
-def save_figure_to_pil(fig, dpi=160):
-    return Image.open(save_figure_to_buffer(fig, dpi))
-
-
-# Concatenate figures into one large figure
-def concatenate_figures(figs, vertical=True, save_path=None, display=False):
-    imageio_images = []
-    for fig in figs:
-        imageio_images.append(imageio.imread(save_figure_to_buffer(fig)))
-    if vertical:
-        concatenated_img = np.vstack(imageio_images)
-    else:
-        concatenated_img = np.hstack(imageio_images)
-    # Create a new figure with the concatenated image
-    fig, ax = plt.subplots(
-        figsize=(concatenated_img.shape[1] / 160, concatenated_img.shape[0] / 160)
-    )
-    ax.axis("off")
-    ax.imshow(concatenated_img, aspect="auto")
-    if save_path:
-        plt.savefig(save_path, dpi=160, bbox_inches="tight", pad_inches=0)
-    if display:
-        display_media(save_path)
-
-
-# Make a GIF with list of matplotlib figures
-def make_gif(figs, save_path, loop=1, duration=0.5, display=False):
-    imageio_images = []
-    for fig in figs:
-        imageio_images.append(imageio.imread(save_figure_to_buffer(fig)))
-    imageio.mimsave(save_path, imageio_images, loop=loop, duration=duration)
-    if display:
-        display_media(save_path)

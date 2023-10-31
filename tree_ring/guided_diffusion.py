@@ -1,6 +1,4 @@
-import numpy as np
 import torch
-from sklearn import metrics
 from PIL import Image
 from utils import set_random_seed
 from collections import namedtuple
@@ -12,60 +10,13 @@ from .optim_utils import (
     inject_watermark,
     eval_watermark,
 )
-from guided_diffusion.script_util import NUM_CLASSES
-
-
-# Guided diffusion without watermark
-def guided_diffusion_without_watermark(
-    model,
-    diffusion,
-    labels,
-    image_size,
-    diffusion_seed,
-    progressive=False,
-    return_image=False,
-):
-    # Diffusion seed is the random seed for diffusion sampling
-    set_random_seed(diffusion_seed)
-    # For guided diffusion, prompts are class ids
-    assert isinstance(labels, list) and all(
-        isinstance(label, int) and 0 <= label < NUM_CLASSES for label in labels
-    )
-    # Device and shape
-    device = next(model.parameters()).device
-    shape = (len(labels), 3, image_size, image_size)
-    # The random initial latent is determined by the diffusion seed, so no need to keep it
-    init_latents_wo = torch.randn(*shape, device=device)
-    # Diffusion
-    if not progressive:
-        output = diffusion.ddim_sample_loop(
-            model=model,
-            shape=shape,
-            noise=init_latents_wo,
-            model_kwargs=dict(y=torch.tensor(labels, device=device)),
-            device=device,
-            return_image=return_image,
-            clip_denoised=False,
-        )
-        return output
-    else:
-        output = []
-        for sample in diffusion.ddim_sample_loop_progressive(
-            model=model,
-            shape=shape,
-            noise=init_latents_wo,
-            model_kwargs=dict(y=torch.tensor(labels, device=device)),
-            device=device,
-        ):
-            if not return_image:
-                output.append(sample["sample"])
-            else:
-                output.append(to_pil(sample["sample"]))
-        return output
+from guided_diffusion import guided_ddim_sample
 
 
 # Generate a message (which is the key in tree-ring's paper) with a specific message seed
-def generate_message(message_seed, image_size, tree_ring_paras, device):
+def generate_guided_tree_ring_message(
+    message_seed, image_size, tree_ring_paras, device
+):
     # Pack dict into namedtuple so that it is compatible with args
     tree_ring_args = namedtuple("Args", list(tree_ring_paras.keys()) + ["w_seed"])(
         **tree_ring_paras, w_seed=message_seed
@@ -78,7 +29,7 @@ def generate_message(message_seed, image_size, tree_ring_paras, device):
 
 
 # Generate a key (which is the mask in tree-ring's paper) with a specific key seed
-def generate_key(key_seed, image_size, tree_ring_paras, device):
+def generate_guided_tree_ring_key(key_seed, image_size, tree_ring_paras, device):
     # For tree-ring, the key (watermarking mask) is not randomized and fully determined by the w_radius and image size
     # Pack dict into namedtuple so that it is compatible with args
     tree_ring_args = namedtuple("Args", tree_ring_paras.keys())(**tree_ring_paras)
@@ -93,7 +44,7 @@ def generate_key(key_seed, image_size, tree_ring_paras, device):
 
 
 # Guided diffusion with watermark
-def guided_diffusion_with_watermark(
+def guided_ddim_sample_with_tree_ring(
     model,
     diffusion,
     labels,
@@ -107,10 +58,6 @@ def guided_diffusion_with_watermark(
 ):
     # Diffusion seed is the random seed for diffusion sampling
     set_random_seed(diffusion_seed)
-    # For guided diffusion, prompts are class ids
-    assert isinstance(labels, list) and all(
-        isinstance(label, int) and 0 <= label < NUM_CLASSES for label in labels
-    )
     # Assert key and message are on the same device as the model
     assert keys.device == messages.device == next(model.parameters()).device
     # Can either use the same key or message for all images, or use different keys or messages for different images
@@ -129,89 +76,21 @@ def guided_diffusion_with_watermark(
     init_latents_wo = torch.randn(*shape, device=device)
     # Inject watermark
     init_latents_w = inject_watermark(init_latents_wo, keys, messages, tree_ring_args)
-    # Diffusion
-    if not progressive:
-        output = diffusion.ddim_sample_loop(
-            model=model,
-            shape=shape,
-            noise=init_latents_w,
-            model_kwargs=dict(y=torch.tensor(labels, device=device)),
-            device=device,
-            return_image=return_image,
-        )
-        return output
-    else:
-        output = []
-        for sample in diffusion.ddim_sample_loop_progressive(
-            model=model,
-            shape=shape,
-            noise=init_latents_w,
-            model_kwargs=dict(y=torch.tensor(labels, device=device)),
-            device=device,
-        ):
-            if not return_image:
-                output.append(sample["sample"])
-            else:
-                output.append(to_pil(sample["sample"]))
-        return output
+    # Guided diffusion with injected latent
+    return guided_ddim_sample(
+        model,
+        diffusion,
+        labels,
+        image_size,
+        diffusion_seed,
+        init_latent=init_latents_w,
+        progressive=progressive,
+        return_image=return_image,
+    )
 
 
-# Reverse guided diffusion
-def reverse_guided_diffusion(
-    model,
-    diffusion,
-    images,
-    image_size,
-    default_labels=0,
-    progressive=False,
-    return_image=False,
-):
-    # Reverse diffusion of DDIM smapling is deterministic, so this line has no effect
-    set_random_seed(0)
-    # Device and shape
-    device = next(model.parameters()).device
-    shape = (len(images), 3, image_size, image_size)
-    # If default labels is a single int, repeat it for all images
-    if isinstance(default_labels, int):
-        default_labels = [default_labels] * len(images)
-    # Check whether the inputs are PIL images
-    input_image = isinstance(images[0], Image.Image)
-    # Reversed diffusion
-    if not progressive:
-        output = diffusion.ddim_reverse_sample_loop(
-            model=model,
-            shape=shape,
-            image=images,
-            # Reverse diffusion does not depends on the labels, thus pass in dummy labels
-            model_kwargs=dict(y=torch.tensor(default_labels, device=device)),
-            device=device,
-            input_image=input_image,
-            clip_denoised=False,
-        )
-        if not return_image:
-            return output
-        else:
-            return to_pil(output)
-    else:
-        output = []
-        for sample in diffusion.ddim_reverse_sample_loop_progressive(
-            model=model,
-            shape=shape,
-            image=images,
-            # Reverse diffusion does not depends on the labels, thus pass in dummy labels
-            model_kwargs=dict(y=torch.tensor(default_labels, device=device)),
-            device=device,
-            input_image=input_image,
-        ):
-            if not return_image:
-                output.append(sample["sample"])
-            else:
-                output.append(to_pil(sample["sample"]))
-        return output
-
-
-# Detect and evaluate watermark
-def detect_evaluate_watermark(
+# Detect tree-ring watermark
+def detect_guided_tree_ring(
     reversed_latents_wo,
     reversed_latents_w,
     keys,
@@ -248,12 +127,5 @@ def detect_evaluate_watermark(
     distances_wo, distances_w = eval_watermark(
         reversed_latents_wo, reversed_latents_w, keys, messages, tree_ring_args
     )
-    # Calculate the AUROC scores and related
-    y_true = [1] * len(distances_wo) + [0] * len(distances_w)
-    y_score = distances_wo + distances_w
 
-    fpr, tpr, thresholds = metrics.roc_curve(y_true, y_score, pos_label=0)
-    auc = metrics.auc(fpr, tpr)
-    acc = np.max(1 - (fpr + (1 - tpr)) / 2)
-    low = tpr[np.where(fpr < 0.01)[0][-1]]
-    return auc, acc, low
+    return distances_wo, distances_w

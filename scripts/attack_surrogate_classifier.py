@@ -8,6 +8,11 @@ from torch.utils.data import Dataset
 from torchvision.datasets import ImageFolder
 from torch.utils.data import DataLoader, random_split
 from torchvision.models import resnet18
+from dotenv import load_dotenv
+
+from guided_diffusion.generate import reverse_guided_diffusion
+
+load_dotenv()
 
 # Relative imports
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -162,7 +167,7 @@ def attack_surrogate_classifier(
             reversed_latnents_w_list.append(reversed_latents[labels == 1].cpu())
 
             # Detect and evaluate watermark
-            auc, acc, low = detect_evaluate_watermark(
+            auc, acc, low = detect_tree_ring(
                 torch.cat(reversed_latnents_wo_list, dim=0),
                 torch.cat(reversed_latnents_w_list, dim=0),
                 keys=keys[0],
@@ -199,7 +204,7 @@ def attack_surrogate_classifier(
         reversed_latnents_adv_w_list.append(reversed_latents_adv[labels == 1].cpu())
 
         # Detect and evaluate watermark
-        auc, acc, low = detect_evaluate_watermark(
+        auc, acc, low = detect_tree_ring(
             torch.cat(reversed_latnents_adv_wo_list, dim=0),
             torch.cat(reversed_latnents_adv_w_list, dim=0),
             keys=keys[0],

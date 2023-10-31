@@ -7,6 +7,9 @@ import torch
 import multiprocessing
 from multiprocessing import Pool
 from tqdm import tqdm
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Relative imports
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -47,7 +50,7 @@ def worker_func(args):
     model, diffusion = load_guided_diffusion_model(image_size, device)
 
     # Generate one watermark key (which is the mask in tree-ring's paper)
-    key = generate_key(
+    key = generate_tree_ring_key(
         key_seed=key_seed,
         image_size=image_size,
         tree_ring_paras=tree_ring_paras,
@@ -55,7 +58,7 @@ def worker_func(args):
     )
 
     # Generate the watermark message (which is the key in tree-ring's paper)
-    message = generate_message(
+    message = generate_tree_ring_message(
         message_seed=message_seed,
         image_size=image_size,
         tree_ring_paras=tree_ring_paras,
@@ -63,7 +66,7 @@ def worker_func(args):
     )
 
     # Generate images with watermark
-    images_w = guided_diffusion_with_watermark(
+    images_w = guided_diffusion_with_tree_ring(
         model,
         diffusion,
         labels,
@@ -194,7 +197,7 @@ def generate_watermarked_images(
     keys = []
     for key_seed in key_seeds:
         keys.append(
-            generate_key(
+            generate_tree_ring_key(
                 key_seed=key_seed,
                 image_size=image_size,
                 tree_ring_paras=tree_ring_paras,
@@ -204,7 +207,7 @@ def generate_watermarked_images(
     messages = []
     for message_seed in message_seeds:
         messages.append(
-            generate_message(
+            generate_tree_ring_message(
                 message_seed=message_seed,
                 image_size=image_size,
                 tree_ring_paras=tree_ring_paras,

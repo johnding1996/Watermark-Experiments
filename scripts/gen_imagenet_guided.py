@@ -7,6 +7,10 @@ import torch
 import multiprocessing
 from multiprocessing import Pool
 from tqdm import tqdm
+from dotenv import load_dotenv
+from guided_diffusion.generate import guided_diffusion
+
+load_dotenv()
 
 # Relative imports
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -35,7 +39,7 @@ def worker_func(args):
     model, diffusion = load_guided_diffusion_model(image_size, device)
 
     # Generate images without watermark
-    images_wo = guided_diffusion_without_watermark(
+    images_wo = guided_diffusion(
         model,
         diffusion,
         labels,

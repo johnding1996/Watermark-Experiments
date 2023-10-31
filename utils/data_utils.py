@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import torch
 from torchvision import datasets, transforms
@@ -11,7 +12,12 @@ from .exp_utils import set_random_seed
 
 # Get ImageNet class names
 def get_imagenet_class_names(labels=None):
-    with open("./datasets/imagenet_class_index.json", "r") as file:
+    with open(
+        os.path.join(
+            os.environ.get("DATASET_DIR"), "source/imagenet/imagenet_class_index.json"
+        ),
+        "r",
+    ) as file:
         cid_to_wnid_and_words = json.load(file)
     if labels is None:
         return {int(cid): words for cid, (wnid, words) in cid_to_wnid_and_words.items()}
@@ -21,7 +27,12 @@ def get_imagenet_class_names(labels=None):
 
 # Get ImageNet wnids
 def get_imagenet_wnids(labels=None):
-    with open("./datasets/imagenet_class_index.json", "r") as file:
+    with open(
+        os.path.join(
+            os.environ.get("DATASET_DIR"), "source/imagenet/imagenet_class_index.json"
+        ),
+        "r",
+    ) as file:
         cid_to_wnid_and_words = json.load(file)
     if labels is None:
         return {int(cid): wnid for cid, (wnid, words) in cid_to_wnid_and_words.items()}
@@ -33,17 +44,30 @@ def get_imagenet_wnids(labels=None):
 def load_imagenet_subset(dataset_name, convert_to_tensor=True, norm_type="naive"):
     assert dataset_name in ["Tiny-ImageNet", "Imagenette"]
     # Load WordNet IDs and class names
-    with open("./datasets/tiny-imagenet-200/wnids.txt", "r") as f:
+    with open(
+        os.path.join(
+            os.environ.get("DATASET_DIR"), "source/imagenet/tiny-imagenet-200/wnids.txt"
+        ),
+        "r",
+    ) as f:
         wnids = [line.strip() for line in f.readlines()]
     wnid_to_words = {}
-    with open("./datasets/tiny-imagenet-200/words.txt", "r") as f:
+    with open(
+        os.path.join(
+            os.environ.get("DATASET_DIR"), "source/imagenet/tiny-imagenet-200/words.txt"
+        ),
+        "r",
+    ) as f:
         for line in f.readlines():
             wnid, words = line.strip().split("\t")
             wnid_to_words[wnid] = words
     # Tiny-ImageNet
     if dataset_name == "Tiny-ImageNet":
         # Tiny-ImageNet dataset
-        data_dir = "./datasets/imagenet-related/tiny-imagenet-200"
+        data_dir = os.path.join(
+            os.environ.get("DATASET_DIR"),
+            "source/imagenet/tiny-imagenet-200",
+        )
         dataset = datasets.ImageFolder(
             f"{data_dir}/train",
             lambda x: to_tensor([x], norm_type=norm_type) if convert_to_tensor else x,
@@ -55,7 +79,10 @@ def load_imagenet_subset(dataset_name, convert_to_tensor=True, norm_type="naive"
     # Imagenette
     elif dataset_name == "Imagenette":
         # Imagenette dataset
-        data_dir = "./datasets/imagenet-related/imagenette2-320"
+        data_dir = os.path.join(
+            os.environ.get("DATASET_DIR"),
+            "source/imagenet/imagenette2-320",
+        )
         dataset = datasets.ImageFolder(
             f"{data_dir}/train",
             transforms.Compose(
@@ -105,12 +132,20 @@ def load_imagenet_guided(
     assert dataset_template in ["Tiny-ImageNet", "Imagenette"]
     # Load WordNet IDs and class names
     wnid_to_words = {}
-    with open("./datasets/tiny-imagenet-200/words.txt", "r") as f:
+    with open(
+        os.path.join(
+            os.environ.get("DATASET_DIR"), "source/imagenet/tiny-imagenet-200/words.txt"
+        ),
+        "r",
+    ) as f:
         for line in f.readlines():
             wnid, words = line.strip().split("\t")
             wnid_to_words[wnid] = words
     # Load dataset
-    data_dir = f"./datasets/imagenet_guided_{image_size}_{dataset_template.lower()}"
+    data_dir = os.path.join(
+        os.environ.get("DATASET_DIR"),
+        f"source/generated/imagenet_guided_{image_size}_{dataset_template.lower()}",
+    )
 
     dataset = datasets.ImageFolder(
         f"{data_dir}/train",

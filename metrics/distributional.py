@@ -4,7 +4,7 @@ import tempfile
 import numpy as np
 import torch
 from PIL import Image
-from tqdm import tqdm, trange
+from tqdm.auto import tqdm, trange
 from utils import set_random_seed
 from utils import to_pil
 from .pytorch_fid.fid_score import calculate_fid_given_paths
@@ -19,15 +19,15 @@ def save_single_image(args):
     image.save(save_path, "PNG")
 
 
-def save_images_to_temp(images, verbose=False):
+def save_images_to_temp(images, num_workers, verbose=False):
     assert isinstance(images, list) and isinstance(images[0], Image.Image)
     temp_dir = tempfile.mkdtemp()
 
     # Create list of data to be processed in parallel
     data_to_process = [(i, image, temp_dir) for i, image in enumerate(images)]
 
-    # Using ProcessPoolExecutor to process images in parallel
-    with ProcessPoolExecutor(max_workers=os.environ.get("NCPUS", 8)) as executor:
+    # Using ProcessPoolExecutor to save images in parallel
+    with ProcessPoolExecutor(max_workers=num_workers) as executor:
         if verbose:
             list(tqdm(executor.map(save_single_image, data_to_process)))
         else:
@@ -52,7 +52,7 @@ def compute_fid(
     if num_workers is not None:
         assert 1 <= num_workers <= os.cpu_count()
     else:
-        num_workers = min(os.environ.get("NCPUS", 8))
+        num_workers = max(torch.cuda.device_count() * 4, 8)
 
     # Check images
     if not isinstance(images1, list):
@@ -65,15 +65,15 @@ def compute_fid(
             images1 = to_pil(images1)
             images2 = to_pil(images2)
         # Save images to temp dir if needed
-        path1 = save_images_to_temp(images1, verbose=verbose)
-        path2 = save_images_to_temp(images2, verbose=verbose)
+        path1 = save_images_to_temp(images1, num_workers=num_workers, verbose=verbose)
+        path2 = save_images_to_temp(images2, num_workers=num_workers, verbose=verbose)
 
     # Calculate FID
     fid_score = calculate_fid_given_paths(
         paths=[path1, path2],
         batch_size=batch_size,
         device=device,
-        dims=2048,
+        dims=dims,
         num_workers=num_workers,
         verbose=verbose,
     )

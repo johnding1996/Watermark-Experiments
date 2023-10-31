@@ -652,7 +652,6 @@ class GaussianDiffusion:
         device=None,
         progress=False,
         eta=0.0,
-        input_image=False,
     ):
         """
         Generate samples from the model using DDIM.
@@ -672,7 +671,6 @@ class GaussianDiffusion:
             device=device,
             progress=progress,
             eta=eta,
-            input_image=input_image,
         ):
             final = sample
 
@@ -691,7 +689,6 @@ class GaussianDiffusion:
         device=None,
         progress=False,
         eta=0.0,
-        input_image=False,
     ):
         """
         Use DDIM to sample from the model and yield intermediate samples from
@@ -703,17 +700,7 @@ class GaussianDiffusion:
             device = next(model.parameters()).device
         assert isinstance(shape, (tuple, list))
 
-        if input_image:
-            img = (
-                th.tensor(np.array(image), device=device, dtype=th.float32).permute(
-                    0, 3, 1, 2
-                )
-                / 127.5
-                - 1
-            )
-        else:
-            img = image
-
+        img = image
         indices = list(range(self.num_timesteps))
 
         if progress:

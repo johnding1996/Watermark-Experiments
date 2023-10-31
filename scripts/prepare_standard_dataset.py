@@ -6,7 +6,9 @@ from torchvision.transforms import Compose, CenterCrop, Resize
 from tqdm import trange
 from transformers import GPT2LMHeadModel, GPT2TokenizerFast
 import open_clip
+from dotenv import load_dotenv
 
+load_dotenv()
 
 clip_tokenizer = open_clip.get_tokenizer("ViT-B-32")
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")

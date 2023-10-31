@@ -1,3 +1,4 @@
+import os
 import torch
 from .script_util import (
     model_and_diffusion_defaults,
@@ -62,7 +63,10 @@ def load_guided_diffusion_model(image_size, device):
     model, diffusion = create_model_and_diffusion(**paras)
     model.load_state_dict(
         torch.load(
-            f"./models/guided-diffusion/{image_size}x{image_size}_diffusion.pt",
+            os.path.join(
+                os.environ.get("MODEL_DIR"),
+                f"guided-diffusion/{image_size}x{image_size}_diffusion.pt",
+            ),
             map_location=device,
         )
     )

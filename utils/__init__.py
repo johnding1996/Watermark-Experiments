@@ -17,11 +17,11 @@ from .data_utils import (
 from .vis_utils import (
     visualize_image_grid,
     visualize_image_list,
-    visualize_imagenet_subset,
+    visualize_supervised_dataset,
     save_figure_to_file,
     save_figure_to_buffer,
     save_figure_to_pil,
-    concatenate_figures,
+    concatenate_images,
     make_gif,
 )
 from .exp_utils import set_random_seed

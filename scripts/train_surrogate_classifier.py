@@ -6,7 +6,9 @@ import torch
 from torch.utils.data import Dataset
 from torchvision.datasets import ImageFolder
 from torch.utils.data import DataLoader, random_split
+from dotenv import load_dotenv
 
+load_dotenv()
 
 # Relative imports
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
