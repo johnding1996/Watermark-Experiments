@@ -1,48 +1,12 @@
 import argparse
-import torch
 from datasets import Dataset, load_from_disk
 from torchvision.datasets import ImageNet, CocoCaptions
 from torchvision.transforms import Compose, CenterCrop, Resize
 from tqdm import trange
-from transformers import GPT2LMHeadModel, GPT2TokenizerFast
-import open_clip
+from metrics import load_open_clip_tokenizer, compute_open_clip_num_tokens
 from dotenv import load_dotenv
 
 load_dotenv()
-
-clip_tokenizer = open_clip.get_tokenizer("ViT-B-32")
-device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
-ppl_model = GPT2LMHeadModel.from_pretrained("gpt2-large").to(device)
-ppl_tokenizer = GPT2TokenizerFast.from_pretrained("gpt2-large")
-
-
-def calculate_num_clip_tokens(prompt):
-    assert isinstance(prompt, str)
-    return (clip_tokenizer(prompt) == 0).sum().item()
-
-
-def calculate_perplexity(prompt, stride=512):
-    assert isinstance(prompt, str)
-    encodings = ppl_tokenizer(prompt, return_tensors="pt")
-    max_length = ppl_model.config.n_positions
-    seq_len = encodings.input_ids.size(1)
-    nlls = []
-    prev_end_loc = 0
-    for begin_loc in range(0, seq_len, stride):
-        end_loc = min(begin_loc + max_length, seq_len)
-        trg_len = end_loc - prev_end_loc  # may be different from stride on last loop
-        input_ids = encodings.input_ids[:, begin_loc:end_loc].to(device)
-        target_ids = input_ids.clone()
-        target_ids[:, :-trg_len] = -100
-        with torch.no_grad():
-            outputs = ppl_model(input_ids, labels=target_ids)
-            neg_log_likelihood = outputs.loss
-        nlls.append(neg_log_likelihood)
-        prev_end_loc = end_loc
-        if end_loc == seq_len:
-            break
-    ppl = torch.exp(torch.stack(nlls).mean()).item()
-    return ppl
 
 
 def prepare_standard_dataset(image_size, dataset_source, prompt_type, dataset_size):
@@ -64,17 +28,16 @@ def prepare_standard_dataset(image_size, dataset_source, prompt_type, dataset_si
             images.append(transform(image))
             prompts.append(dataset[i][1][0])
         dataset = Dataset.from_dict({"image": images, "prompt": prompts}, num_proc=8)
+        # Filter out prompts with 0 or >=74 CLIP tokens
+        # For MSCOCO, this does not filter out any data
+        clip_tokenizer = load_open_clip_tokenizer()
         dataset = dataset.filter(
-            lambda data: 0 < calculate_num_clip_tokens(data["prompt"]) < 74
+            lambda data: 0
+            < compute_open_clip_num_tokens(
+                data["prompt"], clip_tokenizer=clip_tokenizer
+            )
+            < 74
         )
-        dataset = dataset.map(
-            lambda data: {
-                "image": data["image"],
-                "prompt": data["prompt"],
-                "perplexity": calculate_perplexity(data["prompt"]),
-            }
-        )
-        dataset = dataset.sort("perplexity")
         dataset.save_to_disk("./datasets/mscoco_5k/")
 
     elif dataset_source == "DiffusionDB":
@@ -104,16 +67,16 @@ def prepare_standard_dataset(image_size, dataset_source, prompt_type, dataset_si
                 "prompt_nsfw",
             ]
         )
-        dataset = dataset.map(
-            lambda data: {
-                "image": data["image"],
-                "prompt": data["prompt"],
-                "perplexity": calculate_perplexity(data["prompt"]),
-            }
+        # Filter out prompts with 0 or >=74 CLIP tokens
+        # For DiffusionDB, this is necessary as many prompts are too long
+        clip_tokenizer = load_open_clip_tokenizer()
+        dataset = dataset.filter(
+            lambda data: 0
+            < compute_open_clip_num_tokens(
+                data["prompt"], clip_tokenizer=clip_tokenizer
+            )
+            < 74
         )
-        dataset = dataset.sort("perplexity")
-        # Skip the first 50 images with very low perplexity as there are repeatitions in prompts
-        dataset = dataset.select(range(50, 50 + int(dataset_size[:-1]) * 1000))
         dataset.save_to_disk("./datasets/diffusiondb_5k/")
 
     elif dataset_source == "DALLE3":

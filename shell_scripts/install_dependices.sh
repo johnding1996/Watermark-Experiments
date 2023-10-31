@@ -17,6 +17,8 @@ pip install -U xformers --index-url https://download.pytorch.org/whl/cu118
 pip install torchattacks scikit-learn scikit-image
 # Dataset libraries
 pip install pycocotools matplotlib imageio
+# Metric libraries
+pip install git+https://github.com/openai/CLIP.git
 # Parallel libraries
 pip install accelerate deepspeed
 # Other libraries
@@ -32,3 +34,6 @@ pip install wandb && wandb login e66105607bb979a5e6e49a3d5d4ce02894398354
 cd venv/lib/python3.10/site-packages/torch/lib
 ln -s libnvrtc-*.so.11.2 libnvrtc.so
 cd -
+
+# Fix vscode jupyter issue, see https://github.com/microsoft/vscode-jupyter/issues/14618
+pip install ipython==8.16.1

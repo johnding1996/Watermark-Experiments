@@ -1,8 +1,13 @@
+"""
+File from: https://github.com/mseitzer/pytorch-fid
+"""
+
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torchvision
-
+import warnings
 from torch.utils.model_zoo import load_url as load_state_dict_from_url
 
 # Inception weights ported to Pytorch from
@@ -34,7 +39,6 @@ class InceptionV3(nn.Module):
         use_fid_inception=True,
     ):
         """Build pretrained InceptionV3
-
         Parameters
         ----------
         output_blocks : list of int
@@ -77,7 +81,7 @@ class InceptionV3(nn.Module):
         if use_fid_inception:
             inception = fid_inception_v3()
         else:
-            inception = _inception_v3(weights="DEFAULT")
+            inception = _inception_v3(pretrained=True)
 
         # Block 0: input to maxpool1
         block0 = [
@@ -126,13 +130,11 @@ class InceptionV3(nn.Module):
 
     def forward(self, inp):
         """Get Inception feature maps
-
         Parameters
         ----------
         inp : torch.autograd.Variable
             Input tensor of shape Bx3xHxW. Values are expected to be in
             range (0, 1)
-
         Returns
         -------
         List of torch.autograd.Variable, corresponding to the selected output
@@ -142,6 +144,7 @@ class InceptionV3(nn.Module):
         x = inp
 
         if self.resize_input:
+            raise ValueError("should not resize here")
             x = F.interpolate(x, size=(299, 299), mode="bilinear", align_corners=False)
 
         if self.normalize_input:
@@ -159,46 +162,31 @@ class InceptionV3(nn.Module):
 
 
 def _inception_v3(*args, **kwargs):
-    """Wraps `torchvision.models.inception_v3`"""
+    """Wraps `torchvision.models.inception_v3`
+    Skips default weight inititialization if supported by torchvision version.
+    See https://github.com/mseitzer/pytorch-fid/issues/28.
+    """
+    warnings.filterwarnings("ignore")
     try:
         version = tuple(map(int, torchvision.__version__.split(".")[:2]))
     except ValueError:
         # Just a caution against weird version strings
         version = (0,)
 
-    # Skips default weight inititialization if supported by torchvision
-    # version. See https://github.com/mseitzer/pytorch-fid/issues/28.
     if version >= (0, 6):
         kwargs["init_weights"] = False
-
-    # Backwards compatibility: `weights` argument was handled by `pretrained`
-    # argument prior to version 0.13.
-    if version < (0, 13) and "weights" in kwargs:
-        if kwargs["weights"] == "DEFAULT":
-            kwargs["pretrained"] = True
-        elif kwargs["weights"] is None:
-            kwargs["pretrained"] = False
-        else:
-            raise ValueError(
-                "weights=={} not supported in torchvision {}".format(
-                    kwargs["weights"], torchvision.__version__
-                )
-            )
-        del kwargs["weights"]
 
     return torchvision.models.inception_v3(*args, **kwargs)
 
 
 def fid_inception_v3():
     """Build pretrained Inception model for FID computation
-
     The Inception model for FID computation uses a different set of weights
     and has a slightly different structure than torchvision's Inception.
-
     This method first constructs torchvision's Inception and then patches the
     necessary parts that are different in the FID Inception model.
     """
-    inception = _inception_v3(num_classes=1008, aux_logits=False, weights=None)
+    inception = _inception_v3(num_classes=1008, aux_logits=False, pretrained=False)
     inception.Mixed_5b = FIDInceptionA(192, pool_features=32)
     inception.Mixed_5c = FIDInceptionA(256, pool_features=64)
     inception.Mixed_5d = FIDInceptionA(288, pool_features=64)
@@ -209,7 +197,7 @@ def fid_inception_v3():
     inception.Mixed_7b = FIDInceptionE_1(1280)
     inception.Mixed_7c = FIDInceptionE_2(2048)
 
-    state_dict = load_state_dict_from_url(FID_WEIGHTS_URL, progress=True)
+    state_dict = load_state_dict_from_url(FID_WEIGHTS_URL, progress=False)
     inception.load_state_dict(state_dict)
     return inception
 
