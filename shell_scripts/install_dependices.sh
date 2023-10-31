@@ -15,8 +15,8 @@ pip install transformers diffusers 'datasets[vision]' open_clip_torch ftfy
 pip install -U xformers --index-url https://download.pytorch.org/whl/cu118
 # Other machine learning libraries
 pip install torchattacks scikit-learn scikit-image
-# Dataset libraries
-pip install pycocotools matplotlib imageio
+# Data processing libraries
+pip install pycocotools matplotlib imageio opencv-python
 # Metric libraries
 pip install git+https://github.com/openai/CLIP.git
 # Parallel libraries

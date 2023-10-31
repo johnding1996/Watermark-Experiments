@@ -72,16 +72,15 @@ def compute_fid(
     else:
         num_workers = max(torch.cuda.device_count() * 4, 8)
 
-    # Check images, can be paths or PIL images
+    # Check images, can be paths or lists of PIL images
     if not isinstance(images1, list):
         assert isinstance(images1, str) and os.path.exists(images1)
         assert isinstance(images2, str) and os.path.exists(images2)
         path1 = images1
         path2 = images2
     else:
-        if not isinstance(images1[0], Image.Image):
-            images1 = to_pil(images1)
-            images2 = to_pil(images2)
+        assert isinstance(images1, list) and isinstance(images1[0], Image.Image)
+        assert isinstance(images2, list) and isinstance(images2[0], Image.Image)
         # Save images to temp dir if needed
         path1 = save_images_to_temp(images1, num_workers=num_workers, verbose=verbose)
         path2 = save_images_to_temp(images2, num_workers=num_workers, verbose=verbose)
@@ -115,7 +114,7 @@ def compute_fid(
         return fid_score
 
 
-# Compute FID for multiple pairs of subsets
+# Compute FID for multiple times
 def compute_fid_repeated(
     images1,
     images2,

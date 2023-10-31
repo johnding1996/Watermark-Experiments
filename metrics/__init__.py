@@ -8,6 +8,7 @@ from .image import (
     compute_psnr_repeated,
     compute_ssim_repeated,
 )
+from .perceptual import compute_lpips, compute_watson
 from .prompt import (
     load_perplexity_model_and_tokenizer,
     compute_prompt_perplexity,

@@ -44,6 +44,9 @@ def compute_ssim(image1, image2):
 def compute_metric_repeated(
     images1, images2, metric_func, num_workers=None, verbose=False
 ):
+    # Accept list of PIL images
+    assert isinstance(images1, list) and isinstance(images1[0], Image.Image)
+    assert isinstance(images2, list) and isinstance(images2[0], Image.Image)
     assert len(images1) == len(images2)
 
     if num_workers is not None:
