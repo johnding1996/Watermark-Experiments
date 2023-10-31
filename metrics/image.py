@@ -22,19 +22,19 @@ def convert_image_pair_to_numpy(image1, image2):
     return image1_np, image2_np
 
 
-# Compute MSE for a single pair of images
+# Compute MSE between two images
 def compute_mse(image1, image2):
     image1_np, image2_np = convert_image_pair_to_numpy(image1, image2)
     return mean_squared_error(image1_np, image2_np)
 
 
-# Compute PSNR for a single pair of images
+# Compute PSNR between two images
 def compute_psnr(image1, image2):
     image1_np, image2_np = convert_image_pair_to_numpy(image1, image2)
     return peak_signal_noise_ratio(image1_np, image2_np)
 
 
-# Compute SSIM for a single pair of images
+# Compute SSIM between two images
 def compute_ssim(image1, image2):
     image1_np, image2_np = convert_image_pair_to_numpy(image1, image2)
     return structural_similarity_index_measure(image1_np, image2_np, channel_axis=2)
@@ -72,16 +72,16 @@ def compute_metric_repeated(
     return np.mean(values), np.std(values)
 
 
-# Compute MSE for pairs of images
+# Compute MSE between pairs of images
 def compute_mse_repeated(images1, images2, num_workers=None, verbose=False):
     return compute_metric_repeated(images1, images2, compute_mse, num_workers, verbose)
 
 
-# Compute PSNR for pairs of images
+# Compute PSNR between pairs of images
 def compute_psnr_repeated(images1, images2, num_workers=None, verbose=False):
     return compute_metric_repeated(images1, images2, compute_psnr, num_workers, verbose)
 
 
-# Compute SSIM for pairs of images
+# Compute SSIM between pairs of images
 def compute_ssim_repeated(images1, images2, num_workers=None, verbose=False):
     return compute_metric_repeated(images1, images2, compute_ssim, num_workers, verbose)

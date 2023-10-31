@@ -11,10 +11,10 @@ pip install --upgrade pip ipython jupyter ipywidgets python-dotenv
 # PyTorch 2.1.0
 pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
 # Huggingface libraries
-pip install transformers diffusers 'datasets[vision]' open_clip_torch ftfy
+pip install transformers diffusers 'datasets[vision]' ftfy
 pip install -U xformers --index-url https://download.pytorch.org/whl/cu118
 # Other machine learning libraries
-pip install torchattacks scikit-learn scikit-image
+pip install open_clip_torch torchattacks scikit-learn scikit-image
 # Data processing libraries
 pip install pycocotools matplotlib imageio opencv-python
 # Metric libraries

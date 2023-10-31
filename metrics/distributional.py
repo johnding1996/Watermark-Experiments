@@ -13,7 +13,7 @@ from PIL import Image
 from .clean_fid import fid
 
 
-def save_single_image(i, image, temp_dir):
+def save_single_image_to_temp(i, image, temp_dir):
     save_path = os.path.join(temp_dir, f"{i}.png")
     image.save(save_path, "PNG")
 
@@ -23,7 +23,7 @@ def save_images_to_temp(images, num_workers, verbose=False):
     temp_dir = tempfile.mkdtemp()
 
     # Using ProcessPoolExecutor to save images in parallel
-    func = partial(save_single_image, temp_dir=temp_dir)
+    func = partial(save_single_image_to_temp, temp_dir=temp_dir)
     with ProcessPoolExecutor(max_workers=num_workers) as executor:
         tasks = executor.map(func, range(len(images)), images)
         list(tasks) if not verbose else list(

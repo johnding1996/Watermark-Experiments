@@ -1,10 +1,10 @@
 import torch
 from transformers import GPT2LMHeadModel, GPT2TokenizerFast
-from .open_clip import get_tokenizer
+from open_clip import get_tokenizer
 
 
 # Load GPT-2 large model and tokenizer
-def load_perplexity_model_and_tokenizer(device):
+def load_perplexity_model_and_tokenizer():
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
     ppl_model = GPT2LMHeadModel.from_pretrained("gpt2-large").to(device)
     ppl_tokenizer = GPT2TokenizerFast.from_pretrained("gpt2-large")
