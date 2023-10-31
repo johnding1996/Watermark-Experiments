@@ -40,11 +40,12 @@ def compute_prompt_perplexity(prompt, ppl_model, ppl_tokenizer, stride=512):
 
 # Load Open CLIP tokenizer
 def load_open_clip_tokenizer():
-    clip_tokenizer = get_tokenizer("ViT-B-32")
+    clip_tokenizer = get_tokenizer("ViT-g-14")
     return clip_tokenizer
 
 
 # Calculate number of tokens in a prompt using Open CLIP tokenizer
 def compute_open_clip_num_tokens(prompt, clip_tokenizer):
     assert isinstance(prompt, str)
-    return (clip_tokenizer(prompt) == 0).sum().item()
+    # Tokenized encodings is of size (1, 77) with the start and end token
+    return (clip_tokenizer(prompt) != 0).sum().item() - 2
