@@ -18,6 +18,8 @@ from .clip import load_open_clip_model_preprocess_and_tokenizer, compute_clip_sc
 from .prompt import (
     load_perplexity_model_and_tokenizer,
     compute_prompt_perplexity,
-    load_open_clip_tokenizer,
-    compute_open_clip_num_tokens,
+)
+from .aesthetics import (
+    load_aesthetics_and_artifacts_models,
+    compute_aesthetics_and_artifacts_scores,
 )

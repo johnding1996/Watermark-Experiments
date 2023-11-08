@@ -1,6 +1,5 @@
 import torch
 from transformers import GPT2LMHeadModel, GPT2TokenizerFast
-from open_clip import get_tokenizer
 
 
 # Load GPT-2 large model and tokenizer
@@ -12,8 +11,10 @@ def load_perplexity_model_and_tokenizer():
 
 
 # Compute perplexity for a single prompt
-def compute_prompt_perplexity(prompt, ppl_model, ppl_tokenizer, stride=512):
+def compute_prompt_perplexity(prompt, models, stride=512):
     assert isinstance(prompt, str)
+    assert isinstance(models, tuple) and len(models) == 2
+    ppl_model, ppl_tokenizer = models
     encodings = ppl_tokenizer(prompt, return_tensors="pt")
     max_length = ppl_model.config.n_positions
     seq_len = encodings.input_ids.size(1)
@@ -36,16 +37,3 @@ def compute_prompt_perplexity(prompt, ppl_model, ppl_tokenizer, stride=512):
             break
     ppl = torch.exp(torch.stack(nlls).mean()).item()
     return ppl
-
-
-# Load Open CLIP tokenizer
-def load_open_clip_tokenizer():
-    clip_tokenizer = get_tokenizer("ViT-g-14")
-    return clip_tokenizer
-
-
-# Calculate number of tokens in a prompt using Open CLIP tokenizer
-def compute_open_clip_num_tokens(prompt, clip_tokenizer):
-    assert isinstance(prompt, str)
-    # Tokenized encodings is of size (1, 77) with the start and end token
-    return (clip_tokenizer(prompt) != 0).sum().item() - 2

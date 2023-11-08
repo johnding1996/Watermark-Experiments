@@ -1,4 +1,5 @@
 import torch
+from PIL import Image
 import open_clip
 
 
@@ -11,7 +12,11 @@ def load_open_clip_model_preprocess_and_tokenizer():
     return clip_model, clip_preprocess, clip_tokenizer
 
 
-def compute_clip_score(image, prompt, clip_model, clip_preprocess, clip_tokenizer):
+def compute_clip_score(image, prompt, models):
+    assert isinstance(image, Image.Image)
+    assert isinstance(prompt, str)
+    assert isinstance(models, tuple) and len(models) == 3
+    clip_model, clip_preprocess, clip_tokenizer = models
     with torch.no_grad():
         image_processed_tensor = (
             clip_preprocess(image).unsqueeze(0).to(next(clip_model.parameters()).device)
@@ -28,4 +33,4 @@ def compute_clip_score(image, prompt, clip_model, clip_preprocess, clip_tokenize
 
 
 def compute_clip_score_repeated():
-    pass
+    raise NotImplementedError
