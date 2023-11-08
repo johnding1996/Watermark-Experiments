@@ -10,14 +10,14 @@ from utils import set_random_seed, to_tensor, to_pil
 
 
 distortion_strength_paras = dict(
-    rotation=(0, 180),
-    resizedcrop=(1, 0.1),
-    erasing=(0, 0.5),
-    brightness=(1, 4),
-    contrast=(1, 4),
-    blurring=(0, 10),
-    noise=(0, 0.2),
-    compression=(90, 0),
+    rotation=(0, 45),
+    resizedcrop=(1, 0.5),
+    erasing=(0, 0.25),
+    brightness=(1, 2),
+    contrast=(1, 2),
+    blurring=(0, 20),
+    noise=(0, 0.1),
+    compression=(90, 10),
 )
 
 
