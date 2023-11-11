@@ -21,6 +21,8 @@ pip install pycocotools matplotlib imageio opencv-python
 pip install git+https://github.com/openai/CLIP.git
 # Parallel libraries
 pip install accelerate deepspeed
+# HF space and gradio libraries
+pip install huggingface-hub gradio gitpython paramiko
 # Other libraries
 
 
