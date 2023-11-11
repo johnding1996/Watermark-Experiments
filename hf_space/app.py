@@ -8,9 +8,9 @@ from git.exc import GitCommandError
 from dotenv import load_dotenv
 
 load_dotenv()
-login_password = os.getenv("LOGIN_PASSWORD")
-ssh_private_key = os.environ.get("SSH_PRIVATE_KEY")
 result_dir = os.environ.get("RESULT_DIR")
+login_password = os.getenv("LOGIN_PASSWORD")
+github_token = os.environ.get("GITHUB_TOKEN")
 repo_url = os.environ.get("REPO_URL")
 branch_name = os.environ.get("BRANCH_NAME")
 
@@ -26,7 +26,15 @@ def count_json_files(path):
 
 def reload_results():
     try:
-        with Git().custom_environment(GIT_SSH="./gitssh.py"):
+        if github_token is not None:
+            # If github_token is provided, then it is on the HF space and we can clone the repository
+            repo = Repo(result_dir)
+            repo.remotes["origin"].set_url(
+                f"https://{github_token}:x-oauth-basic@{repo_url}"
+            )
+            repo.remotes["origin"].pull()
+        else:
+            # If github_token is not provided, then it is on the local machine
             Repo(result_dir).git.pull()
         return f"Reloaded successfully, {count_json_files(result_dir)} files found."
     except GitCommandError as e:
@@ -55,19 +63,15 @@ with gr.Blocks() as app:
 
 
 if __name__ == "__main__":
-    # Clone or pull the repository
-    if ssh_private_key is not None:
-        # If ssh_key is provided, then it is on the HF space and we can clone the repository
+    if github_token is not None:
+        # If github_token is provided, then it is on the HF space and we can clone the repository
         assert not os.path.isdir(result_dir)
-        # Dump the ssh_key to the file
-        # with open("id_rsa", "w") as file:
-        #     file.write(ssh_private_key)
-        # os.chmod("id_rsa", 0o600)
-
-        # Clone the repository if it does not exist
-        with Git().custom_environment(GIT_SSH="./gitssh.py"):
-            Repo.clone_from(repo_url, result_dir, branch=branch_name)
+        Repo.clone_from(
+            f"https://{github_token}:x-oauth-basic@{repo_url}",
+            result_dir,
+            branch=branch_name,
+        )
     else:
-        # If ssh_key is not provided, then it is on the local machine and we can pull the repository
+        # If github_token is not provided, then it is on the local machine
         assert os.path.isdir(result_dir)
     app.launch(auth=("admin", login_password))
