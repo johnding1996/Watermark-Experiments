@@ -13,6 +13,7 @@ def cli():
 @click.command()
 def reverse():
     """Reverse stable diffusion on attacked images. Run this command inside the image directory."""
+    print("I am here", os.path.dirname(os.path.abspath(__file__)))
     subprocess.run(
         [
             sys.executable,

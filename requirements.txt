@@ -1,5 +1,3 @@
-torch==2.1.0
-torchvision==0.16.0
 bchlib>=1.0.0
 blobfile>=2.1.1
 click>=8.1.7
