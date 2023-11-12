@@ -1,8 +1,6 @@
 import os
-import io
 import gradio as gr
-import subprocess
-from git import Repo, Git
+from git import Repo
 from git.exc import GitCommandError
 from dotenv import load_dotenv
 

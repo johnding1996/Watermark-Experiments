@@ -18,7 +18,7 @@ def validate_image_directory_name(path):
     attack_dirname = str(path).split("/")[-1]
     if not len(attack_dirname.split("-")) == 3:
         raise ValueError(
-            f"Attack directory name {attack_dirname} is not in the format of 'attack_name-strength-source_name'"
+            f"Attack directory name {attack_dirname} is not in the format of 'attack_name-attack_strength-source_name'"
         )
     attack_name, attack_strength, source_name = attack_dirname.split("-")
     try:

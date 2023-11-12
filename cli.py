@@ -6,7 +6,7 @@ import subprocess
 
 @click.group()
 def cli():
-    """Watermark benchmarking tool."""
+    """Watermark benchmarking tool, version 0.1"""
     pass
 
 
