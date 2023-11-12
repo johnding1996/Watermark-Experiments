@@ -10,6 +10,9 @@ setup(
     packages=find_packages(),
     py_modules=["cli"],
     install_requires=requirements,
+    dependency_links=[
+        "https://download.pytorch.org/whl/cu118",
+    ],
     entry_points={
         "console_scripts": ["wmbench=cli:cli"]  # Pointing to the cli function in cli.py
     },
