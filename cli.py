@@ -1,6 +1,7 @@
 import os
 import sys
 import click
+import random
 import subprocess
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from tqdm.auto import tqdm
@@ -19,7 +20,7 @@ def cli():
 @click.command()
 def version():
     """Check the version of the CLI."""
-    click.echo("0.1.5")
+    click.echo("0.1.6")
 
 
 # Worker function to run a command on a single image directory
@@ -57,7 +58,8 @@ def call_script(script_name, all, dry, args):
             raise ValueError(
                 "Cannot use --path or -p when running on all image directories"
             )
-        paths = list(get_all_image_dir_paths().values())
+        paths = list(path for key, path in get_all_image_dir_paths().items())
+        random.shuffle(paths)
         print(
             f"Running command 'wmbench {script_name}' on {len(paths)} image directories found"
         )

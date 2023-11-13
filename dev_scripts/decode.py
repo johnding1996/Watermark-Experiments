@@ -89,7 +89,12 @@ def init_decoder_model(mode, gpu):
 def load_image_or_reversed_latents(mode, path, indices):
     if mode == "tree_ring":
         return torch.cat(
-            [torch.load(os.path.join(path, f"{idx}_reversed.pkl")) for idx in indices],
+            [
+                torch.load(
+                    os.path.join(path, f"{idx}_reversed.pkl"), map_location="cpu"
+                )
+                for idx in indices
+            ],
             dim=0,
         )
     elif mode == "stable_sig":
