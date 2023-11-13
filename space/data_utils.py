@@ -1,10 +1,5 @@
 import os
-import stat
 import warnings
-import orjson
-import base64
-from io import BytesIO
-from PIL import Image
 
 
 def check_file_existence(path, name_pattern, limit):
@@ -29,42 +24,6 @@ def existence_to_indices(existences, limit):
         if existences[i]:
             indices.append(i)
     return indices
-
-
-def chmod_group_write(path):
-    if not os.path.exists(path):
-        raise ValueError(f"Path {path} does not exist")
-    current_permissions = stat.S_IMODE(os.lstat(path).st_mode)
-    os.chmod(path, current_permissions | stat.S_IWGRP)
-
-
-def compare_dicts(dict1, dict2):
-    if dict1.keys() != dict2.keys():
-        return False
-    for key in dict1:
-        if isinstance(dict1[key], dict) and isinstance(dict2[key], dict):
-            if not compare_dicts(dict1[key], dict2[key]):
-                return False
-        else:
-            if dict1[key] != dict2[key]:
-                return False
-    return True
-
-
-def save_json(data, filepath):
-    if os.path.exists(filepath):
-        with open(filepath, "rb") as json_file:
-            existing_data = orjson.loads(json_file.read())
-        if compare_dicts(data, existing_data):
-            return
-    with open(filepath, "wb") as json_file:
-        json_file.write(orjson.dumps(data))
-    chmod_group_write(filepath)
-
-
-def load_json(filepath):
-    with open(filepath, "rb") as json_file:
-        return orjson.loads(json_file.read())
 
 
 def parse_image_dir_path(path, quiet=True):
@@ -149,21 +108,3 @@ def get_all_image_dir_paths():
         except ValueError:
             warnings.warn(f"Found invalid image directory {path}, skipping")
     return image_dir_dict
-
-
-def encode_image_to_string(image, size=256, quality=75):
-    # Resize the image
-    image = image.resize((size, size))
-    # Save the image to a byte buffer in JPEG format
-    buffered = BytesIO()
-    image.save(buffered, format="JPEG", quality=quality)
-    # Encode the buffer to a base64 string
-    return base64.b64encode(buffered.getvalue()).decode()
-
-
-def decode_image_from_string(base64_str):
-    # Decode the base64 string to bytes
-    img_data = base64.b64decode(base64_str)
-    # Read the image from bytes
-    image = Image.open(BytesIO(img_data))
-    return image

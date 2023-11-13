@@ -111,8 +111,22 @@ def status(all, args):
 @click.option("--dry", "-d", is_flag=True, default=False, help="Dry run")
 @click.argument("args", nargs=-1)
 def reverse(all, dry, args):
-    """Reverse stable diffusion on attacked images."""
+    """Reverse stable diffusion on attacked images (support --all)."""
     call_script("reverse", all, dry, args)
+
+
+@click.command(
+    context_settings=dict(
+        ignore_unknown_options=True,
+    )
+)
+@click.option(
+    "--all", "-a", is_flag=True, default=False, help="Run on all image directories"
+)
+@click.argument("args", nargs=-1)
+def decode(all, args):
+    """Decode messags from images (support --all)."""
+    call_script("decode", all, False, args)
 
 
 @click.command()
@@ -158,6 +172,7 @@ cli.add_command(version)
 # Main commands (support --all to run on all image directories)
 cli.add_command(status)
 cli.add_command(reverse)
+cli.add_command(decode)
 # Utility commands
 cli.add_command(chmod)
 # Debug commands

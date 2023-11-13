@@ -48,7 +48,7 @@ def main(path, dry, quiet, limit=5000):
     existences = check_file_existence(path, name_pattern="{}.png", limit=limit)
     if not quiet:
         print(f"Found {sum(existences)} images out of {limit}")
-    thumbnails = get_image_dir_thumbnails(path, sampled=[1, 10, 100], limit=limit)
+    thumbnails = get_image_dir_thumbnails(path, sampled=[0, 1, 10, 100], limit=limit)
     data = {}
     for i in range(limit):
         data[str(i)] = {"exist": existences[i], "thumbnail": thumbnails[i]}

@@ -140,7 +140,6 @@ def process(indices, path, quiet):
 
 
 def report(path, quiet, limit):
-    dataset_name, _, _, _ = parse_image_dir_path(path)
     reversed_latents_existences = check_file_existence(
         path, name_pattern="{}_reversed.pkl", limit=limit
     )
@@ -149,7 +148,7 @@ def report(path, quiet, limit):
         data[str(i)] = reversed_latents_existences[i]
     json_path = os.path.join(
         os.environ.get("RESULT_DIR"),
-        dataset_name,
+        str(path).split("/")[-2],
         f"{str(path).split('/')[-1]}-reverse.json",
     )
     save_json(data, json_path)
