@@ -14,7 +14,7 @@ pip install torch torchvision torchaudio --index-url https://download.pytorch.or
 pip install transformers diffusers 'datasets[vision]' ftfy
 pip install -U xformers --index-url https://download.pytorch.org/whl/cu118
 # Other machine learning libraries
-pip install open_clip_torch torchattacks scikit-learn scikit-image
+pip install onnxruntime-gpu open_clip_torch torchattacks scikit-learn scikit-image
 # Data processing libraries
 pip install pycocotools matplotlib imageio opencv-python
 # Metric libraries
@@ -22,15 +22,8 @@ pip install git+https://github.com/openai/CLIP.git
 # Parallel libraries
 pip install accelerate deepspeed
 # HF space and gradio libraries
-pip install huggingface-hub gradio gitpython paramiko
+pip install huggingface-hub gradio gitpython
 # Other libraries
-
-
-# Logins (remove later)
-# Setup git
-git config --global user.name "mcding" && git config --global user.email "mcding@umd.edu"
-# Setup wandb
-pip install wandb && wandb login e66105607bb979a5e6e49a3d5d4ce02894398354
 
 # Fix CUDNN issue for libnvrtc.so, see https://stackoverflow.com/questions/76216778/userwarning-applied-workaround-for-cudnn-issue-install-nvrtc-so
 cd venv/lib/python3.10/site-packages/torch/lib

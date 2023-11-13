@@ -1,8 +1,6 @@
 import os
-import io
 import gradio as gr
-import subprocess
-from git import Repo, Git
+from git import Repo
 from git.exc import GitCommandError
 from dotenv import load_dotenv
 
@@ -26,7 +24,7 @@ def count_json_files(path):
 def reload_results():
     try:
         if github_token is not None:
-            # If github_token is provided, then it is on the HF space and we can clone the repository
+            # If github_token is provided, then it is on the HF space
             repo = Repo(result_dir)
             repo.remotes["origin"].set_url(
                 f"https://{github_token}:x-oauth-basic@{repo_url}"
@@ -63,13 +61,19 @@ with gr.Blocks() as app:
 
 if __name__ == "__main__":
     if github_token is not None:
-        # If github_token is provided, then it is on the HF space and we can clone the repository
-        assert not os.path.isdir(result_dir)
-        Repo.clone_from(
-            f"https://{github_token}:x-oauth-basic@{repo_url}",
-            result_dir,
-            branch=branch_name,
-        )
+        # If github_token is provided, then it is on the HF space
+        if os.path.isdir(result_dir):
+            repo = Repo(result_dir)
+            repo.remotes["origin"].set_url(
+                f"https://{github_token}:x-oauth-basic@{repo_url}"
+            )
+            repo.remotes["origin"].pull()
+        else:
+            Repo.clone_from(
+                f"https://{github_token}:x-oauth-basic@{repo_url}",
+                result_dir,
+                branch=branch_name,
+            )
     else:
         # If github_token is not provided, then it is on the local machine
         assert os.path.isdir(result_dir)
