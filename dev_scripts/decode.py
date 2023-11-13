@@ -4,8 +4,6 @@ import torch
 import numpy as np
 import onnxruntime as ort
 import torch.multiprocessing as mp
-import orjson
-import base64
 from PIL import Image, ImageOps
 import warnings
 from tqdm.auto import tqdm
@@ -69,10 +67,12 @@ def init_decoder_model(mode, gpu):
         mask[:, channel] = torch.tensor(((x - x0) ** 2 + (y - y0) ** 2) <= radius**2)
         return mask
     elif mode == "stable_sig":
-        model = torch.jit.load(
-            os.path.join(os.environ.get("MODEL_DIR"), "stable_signature.pt")
-        ).to(f"cuda:{gpu}")
-        return model
+        return torch.jit.optimize_for_inference(
+            torch.jit.load(
+                os.path.join(os.environ.get("MODEL_DIR"), "stable_signature.pt"),
+                map_location=torch.device(f"cuda:{gpu}"),
+            ),
+        )
     elif mode == "stegastamp":
         session_options = ort.SessionOptions()
         session_options.intra_op_num_threads = 1
@@ -86,47 +86,73 @@ def init_decoder_model(mode, gpu):
         )
 
 
-def decode_image_or_reversed_latents(mode, model, gpu, path, idx):
+def load_image_or_reversed_latents(mode, path, indices):
     if mode == "tree_ring":
-        reversed_latents = torch.load(os.path.join(path, f"{idx}_reversed.pkl"))
-        reversed_latents_fft = torch.fft.fftshift(
-            torch.fft.fft2(reversed_latents), dim=(-1, -2)
-        )[model].flatten()
-        return (
-            torch.concatenate([reversed_latents_fft.real, reversed_latents_fft.imag])
-            .cpu()
-            .numpy()
+        return torch.cat(
+            [torch.load(os.path.join(path, f"{idx}_reversed.pkl")) for idx in indices],
+            dim=0,
         )
     elif mode == "stable_sig":
-        image = Image.open(os.path.join(path, f"{idx}.png"))
-        return (
-            (model(to_tensor([image]).to(f"cuda:{gpu}")) > 0)
-            .squeeze()
-            .cpu()
-            .numpy()
-            .astype(bool)
+        return to_tensor(
+            [Image.open(os.path.join(path, f"{idx}.png")) for idx in indices],
+            norm_type="imagenet",
         )
     elif mode == "stegastamp":
-        image = Image.open(os.path.join(path, f"{idx}.png"))
-        image = np.array(ImageOps.fit(image, (400, 400)), dtype=np.float32)
-        image /= 255.0
-        image = np.expand_dims(image, axis=0)
-        secret = np.zeros((1, 100), dtype=np.float32)
-        inputs = {
-            "image": image,
-            "secret": secret,
-        }
-        outputs = model.run(None, inputs)
-        return outputs[2].flatten().astype(bool)
+        return np.stack(
+            [
+                np.array(
+                    ImageOps.fit(
+                        Image.open(os.path.join(path, f"{idx}.png")), (400, 400)
+                    ),
+                    dtype=np.float32,
+                )
+                / 255.0
+                for idx in indices
+            ],
+            axis=0,
+        )
+
+
+def decode_image_or_reversed_latents(mode, model, gpu, inputs):
+    if mode == "tree_ring":
+        fft_latents = torch.fft.fftshift(
+            torch.fft.fft2(inputs.to(f"cuda:{gpu}")), dim=(-1, -2)
+        )
+        messages = torch.stack(
+            [
+                fft_latents[i].unsqueeze(0)[model].flatten()
+                for i in range(fft_latents.shape[0])
+            ],
+            dim=0,
+        )
+        return torch.concatenate([messages.real, messages.imag], dim=1).cpu().numpy()
+    elif mode == "stable_sig":
+        return (model(inputs.to(f"cuda:{gpu}")) > 0).cpu().numpy().astype(bool)
+    elif mode == "stegastamp":
+        outputs = model.run(
+            None,
+            {
+                "image": inputs,
+                "secret": np.zeros((inputs.shape[0], 100), dtype=np.float32),
+            },
+        )
+        return outputs[2].astype(bool)
 
 
 def worker(mode, gpu, path, indices, lock, counter, results):
     model = init_decoder_model(mode, gpu)
-    for idx in indices:
-        message = decode_image_or_reversed_latents(mode, model, gpu, path, idx)
+    batch_size = {"tree_ring": 64, "stable_sig": 16, "stegastamp": 8}[mode]
+    for it in range(0, len(indices), batch_size):
+        inputs = load_image_or_reversed_latents(
+            mode, path, indices[it : min(it + batch_size, len(indices))]
+        )
+        messages = decode_image_or_reversed_latents(mode, model, gpu, inputs)
         with lock:
-            counter.value += 1
-            results[idx] = encode_array_to_string(message)
+            counter.value += inputs.shape[0]
+            for idx, message in zip(
+                indices[it : min(it + batch_size, len(indices))], messages
+            ):
+                results[idx] = encode_array_to_string(message)
 
 
 def process(mode, indices, path, quiet):
@@ -137,17 +163,21 @@ def process(mode, indices, path, quiet):
     if not quiet:
         print(f"Using {num_gpus} GPUs for processing")
 
-    chunk_size = len(indices) // num_gpus
-
+    num_workers = {
+        "tree_ring": num_gpus * 2,
+        "stable_sig": 1,
+        "stegastamp": num_gpus * 2,
+    }[mode]
+    chunk_size = len(indices) // num_workers
     with mp.Manager() as manager:
         counter = manager.Value("i", 0)
         lock = manager.Lock()
         results = manager.dict()
 
         processes = []
-        for rank in range(num_gpus * 1):
+        for rank in range(num_workers):
             start_idx = rank * chunk_size
-            end_idx = None if rank == num_gpus * 1 - 1 else (rank + 1) * chunk_size
+            end_idx = None if rank == num_workers - 1 else (rank + 1) * chunk_size
             p = mp.Process(
                 target=worker,
                 args=(
