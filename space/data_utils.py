@@ -89,7 +89,9 @@ def parse_image_dir_path(path, quiet=True):
         raise ValueError("Invalid image directory path, unable to parse")
 
 
-def get_all_image_dir_paths():
+def get_all_image_dir_paths(criteria=None):
+    if criteria is not None and not callable(criteria):
+        raise ValueError("criteria must be a callable function")
     dir_paths = []
     for mode in ["main", "attacked"]:
         for dataset_name in ["diffusiondb", "mscoco", "dalle3"]:
@@ -104,7 +106,9 @@ def get_all_image_dir_paths():
     image_dir_dict = {}
     for path in dir_paths:
         try:
-            image_dir_dict[parse_image_dir_path(path)] = path
+            key = parse_image_dir_path(path)
+            if criteria is None or criteria(*key):
+                image_dir_dict[key] = path
         except ValueError:
             warnings.warn(f"Found invalid image directory {path}, skipping")
     return image_dir_dict

@@ -1,5 +1,6 @@
 import os
 import click
+import random
 import torch
 import numpy as np
 import onnxruntime as ort
@@ -187,7 +188,9 @@ def process(mode, indices, path, quiet):
                 target=worker,
                 args=(
                     mode,
-                    rank % num_gpus,
+                    rank % num_gpus
+                    if mode != "stable_sig"
+                    else random.randint(0, 3),  # for stable_sig, use random gpu
                     path,
                     indices[start_idx:end_idx],
                     lock,

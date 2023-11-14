@@ -194,7 +194,7 @@ webencodings==0.5.1
 websocket-client==1.6.4
 websockets==11.0.3
 widgetsnbextension==4.0.9
--e git+ssh://git@github.com/johnding1996/Watermark-Experiments.git@99fc77b94b2dd26820d540bee0d03a8e1a3391c0#egg=wmbench
+-e git+ssh://git@github.com/johnding1996/Watermark-Experiments.git@c0e7bb94123eade85450e7d4f8bab2a4bc0b3de1#egg=wmbench
 xformers==0.0.22.post7+cu118
 xxhash==3.4.1
 yarl==1.9.2
