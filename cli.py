@@ -131,6 +131,20 @@ def decode(all, args):
     call_script("decode", all, False, args)
 
 
+@click.command(
+    context_settings=dict(
+        ignore_unknown_options=True,
+    )
+)
+@click.option(
+    "--all", "-a", is_flag=True, default=False, help="Run on all image directories"
+)
+@click.argument("args", nargs=-1)
+def metric(all, args):
+    """Measure image quality metrics (support --all)."""
+    call_script("metric", all, False, args)
+
+
 @click.command()
 def chmod():
     """Grant group write access to all your files."""
@@ -175,6 +189,7 @@ cli.add_command(version)
 cli.add_command(status)
 cli.add_command(reverse)
 cli.add_command(decode)
+cli.add_command(metric)
 # Utility commands
 cli.add_command(chmod)
 # Debug commands

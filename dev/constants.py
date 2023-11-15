@@ -6,7 +6,19 @@ WATERMARK_METHODS = ["tree_ring", "stable_sig", "stegastamp"]
 
 PERFORMANCE_METRICS = ["Mean Accuracy", "AUC", "TPR@0.1%FPR"]
 
-QUALITY_METRICS = []
+QUALITY_METRICS = [
+    "Legacy FID",
+    "Clean FID",
+    "CLIP FID",
+    "PSNR",
+    "SSIM",
+    "NMI",
+    "LPIPS",
+    "WATSON",
+    "Aesthetics Score",
+    "Artifacts Score",
+    "Delta CLIP Score",
+]
 
 EVALUATION_SETUPS = ["combined", "removal", "spoofing"]
 

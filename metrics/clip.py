@@ -30,7 +30,3 @@ def compute_clip_score(image, prompt, models):
         text_features /= text_features.norm(dim=-1, keepdim=True)
 
         return (image_features @ text_features.T).mean(-1).cpu().item()
-
-
-def compute_clip_score_repeated():
-    raise NotImplementedError

@@ -187,5 +187,6 @@ def get_all_json_paths(criteria=None):
             if criteria is None or criteria(*key):
                 json_dict[key] = path
         except ValueError as e:
-            warnings.warn(f"Found invalid JSON file {path}, {e}, skipping")
+            if not path.endswith("prompts.json"):
+                warnings.warn(f"Found invalid JSON file {path}, {e}, skipping")
     return json_dict

@@ -56,7 +56,7 @@ def compute_metric_repeated(images1, images2, metric_name, mode="vgg", verbose=F
         else zip(images1, images2)
     ):
         values.append(compute_metric(image1, image2, perceptual_model))
-    return np.mean(values), np.std(values)
+    return values
 
 
 # Compute LPIPS distance between pairs of images
