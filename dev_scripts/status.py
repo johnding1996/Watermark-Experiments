@@ -1,7 +1,7 @@
 import click
 import os
 from PIL import Image, ImageDraw
-from space import (
+from dev import (
     check_file_existence,
     parse_image_dir_path,
     encode_image_to_string,

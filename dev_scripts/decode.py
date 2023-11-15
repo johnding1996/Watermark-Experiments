@@ -8,7 +8,7 @@ from PIL import Image, ImageOps
 import warnings
 from tqdm.auto import tqdm
 import dotenv
-from space import (
+from dev import (
     DECODE_MODES,
     check_file_existence,
     existence_operation,

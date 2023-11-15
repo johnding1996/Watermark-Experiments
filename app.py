@@ -1,10 +1,7 @@
 import os
 import gradio as gr
 from git import Repo
-from encode_utils import *
-from data_utils import *
-from result_utils import *
-from eval_utils import *
+from dev import *
 from dotenv import load_dotenv
 
 load_dotenv()

@@ -6,7 +6,7 @@ import subprocess
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from tqdm.auto import tqdm
 import dotenv
-from space import get_all_image_dir_paths
+from dev import get_all_image_dir_paths
 
 dotenv.load_dotenv(override=False)
 
@@ -150,7 +150,7 @@ def space():
     subprocess.run(
         [
             sys.executable,
-            os.path.join(os.path.dirname(os.path.abspath(__file__)), "space/app.py"),
+            os.path.join(os.path.dirname(os.path.abspath(__file__)), "app.py"),
         ]
     )
 

@@ -2,10 +2,7 @@ import os
 import stat
 import warnings
 import orjson
-
-
-# TODO: delete after refactoring
-DECODE_MODES = ["tree_ring", "stable_sig", "stegastamp"]
+from .encode_utils import DECODE_MODES
 
 
 def chmod_group_write(path):
