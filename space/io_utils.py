@@ -11,8 +11,9 @@ from PIL import Image
 def chmod_group_write(path):
     if not os.path.exists(path):
         raise ValueError(f"Path {path} does not exist")
-    current_permissions = stat.S_IMODE(os.lstat(path).st_mode)
-    os.chmod(path, current_permissions | stat.S_IWGRP)
+    if os.stat(path).st_uid == os.getuid():
+        current_permissions = stat.S_IMODE(os.lstat(path).st_mode)
+        os.chmod(path, current_permissions | stat.S_IWGRP)
 
 
 def compare_dicts(dict1, dict2):

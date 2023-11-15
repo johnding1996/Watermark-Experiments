@@ -14,7 +14,7 @@ pip install torch torchvision torchaudio --index-url https://download.pytorch.or
 pip install transformers diffusers 'datasets[vision]' ftfy
 pip install -U xformers --index-url https://download.pytorch.org/whl/cu118
 # Other machine learning libraries
-pip install onnxruntime-gpu open_clip_torch torchattacks scikit-learn scikit-image
+pip install onnx onnxruntime-gpu open_clip_torch torchattacks scikit-learn scikit-image
 # Data processing libraries
 pip install pycocotools matplotlib imageio opencv-python
 # Metric libraries
@@ -22,7 +22,7 @@ pip install git+https://github.com/openai/CLIP.git
 # Parallel libraries
 pip install accelerate deepspeed
 # HF space and gradio libraries
-pip install huggingface-hub gradio gitpython
+pip install huggingface-hub gitpython gradio==4.3.0
 # Other libraries
 
 # Fix CUDNN issue for libnvrtc.so, see https://stackoverflow.com/questions/76216778/userwarning-applied-workaround-for-cudnn-issue-install-nvrtc-so
