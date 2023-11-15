@@ -35,7 +35,11 @@ def reload_results():
 # Tab: Experiment Progress
 
 
-def show_progress(progress_dataset_name_dropdown, progress_source_name_dropdown):
+def show_experiment_progress(
+    progress_dataset_name_dropdown,
+    progress_source_name_dropdown,
+    progress=gr.Progress(),
+):
     try:
         dataset_name = (
             (progress_dataset_name_dropdown.replace("-", "").replace(" ", "").lower())
@@ -54,24 +58,23 @@ def show_progress(progress_dataset_name_dropdown, progress_source_name_dropdown)
         )
         json_dict = get_all_json_paths(
             lambda _dataset_name, _attack_name, _attack_strength, _source_name, _result_type: (
-                _dataset_name == dataset_name
-                if dataset_name
-                else True
-                and (_source_name.startswith(source_name) if source_name else False)
-                if source_name
-                else True
+                (_dataset_name == dataset_name if dataset_name else True)
+                and (_source_name.startswith(source_name) if source_name else True)
             )
         )
         progress_dict = {
             (key[0], key[3], key[1], key[2]): [None, None, None, None]
             for key in json_dict.keys()
         }
-        for key, json_path in json_dict.items():
+        for key, json_path in progress.tqdm(json_dict.items()):
             progress_dict[(key[0], key[3], key[1], key[2])][
                 ["status", "reverse", "decode", "metric"].index(key[4])
             ] = get_progress_from_json(json_path)
+
         return gr.update(
-            value=[[*key, *progress_dict[key]] for key in progress_dict.keys()],
+            value=style_progress_dataframe(
+                [[*key, *progress_dict[key]] for key in progress_dict.keys()]
+            ),
         )
     except Exception as e:
         raise gr.Error(e)
@@ -300,10 +303,10 @@ with gr.Blocks() as app:
                     "Source",
                     "Attack",
                     "Strength",
-                    "# Generated",
-                    "# Reversed",
-                    "# Decoded",
-                    "# Metricized",
+                    "Generated",
+                    "Reversed",
+                    "Decoded",
+                    "Measured",
                 ],
                 datatype=[
                     "str",
@@ -316,11 +319,11 @@ with gr.Blocks() as app:
                     "number",
                 ],
                 col_count=(8, "fixed"),
-                type="array",
+                type="pandas",
                 interactive=False,
             )
             progress_show_button.click(
-                show_progress,
+                show_experiment_progress,
                 inputs=[progress_dataset_name_dropdown, progress_source_name_dropdown],
                 outputs=progress_dataframe,
             )

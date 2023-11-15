@@ -4,6 +4,7 @@ from .constants import (
     WATERMARK_METHODS,
     GROUND_TRUTH_MESSAGES,
     QUALITY_METRICS,
+    EVALUATION_SETUPS,
 )
 from .io import (
     chmod_group_write,
@@ -34,4 +35,5 @@ from .eval import (
     complex_l1,
     message_distance,
 )
-from .aggregate import *
+from .aggregate import get_performance_from_jsons, get_performance, get_quality_metrics
+from .plot import style_progress_dataframe
