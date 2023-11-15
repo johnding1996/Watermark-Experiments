@@ -9,7 +9,9 @@ import warnings
 from tqdm.auto import tqdm
 import dotenv
 from dev import (
-    DECODE_MODES,
+    LIMIT,
+    SUBSET_LIMIT,
+    WATERMARK_METHODS,
     check_file_existence,
     existence_operation,
     existence_to_indices,
@@ -29,8 +31,7 @@ def get_indices(mode, path, quiet, subset, limit, subset_limit):
         str(path).split("/")[-2],
         f"{str(path).split('/')[-1]}-decode.json",
     )
-    if os.path.exists(json_path):
-        data = load_json(json_path)
+    if os.path.exists(json_path) and (data := load_json(json_path)) is not None:
         decoded_existences = [data[str(i)][mode] is not None for i in range(limit)]
         if (not subset and sum(decoded_existences) == limit) or (
             subset and sum(decoded_existences[:subset_limit]) == subset_limit
@@ -250,15 +251,14 @@ def report(mode, path, results, quiet, limit):
         str(path).split("/")[-2],
         f"{str(path).split('/')[-1]}-decode.json",
     )
-    if not os.path.exists(json_path):
+    if (not os.path.exists(json_path)) or (data := load_json(json_path)) is None:
         data = {}
         for idx in range(limit):
             data[str(idx)] = {
                 target_mode: results.get(idx) if mode == target_mode else None
-                for target_mode in DECODE_MODES
+                for target_mode in WATERMARK_METHODS
             }
     else:
-        data = load_json(json_path)
         for idx, message in results.items():
             data[str(idx)][mode] = message
     save_json(data, json_path)
@@ -285,14 +285,14 @@ def single_mode(mode, path, quiet, subset, limit, subset_limit):
 @click.option("--dry", "-d", is_flag=True, default=False, help="Dry run")
 @click.option("--subset", "-s", is_flag=True, default=False, help="Run on subset only")
 @click.option("--quiet", "-q", is_flag=True, default=False, help="Quiet mode")
-def main(path, dry, subset, quiet, limit=5000, subset_limit=1000):
+def main(path, dry, subset, quiet, limit=LIMIT, subset_limit=SUBSET_LIMIT):
     _, _, _, source_name = parse_image_dir_path(path, quiet=quiet)
     # Reverse is only required for real and tree_ring watermarked images
     if source_name == "real":
-        for mode in DECODE_MODES:
+        for mode in WATERMARK_METHODS:
             single_mode(mode, path, quiet, subset, limit, subset_limit)
             return
-    for mode in DECODE_MODES:
+    for mode in WATERMARK_METHODS:
         if source_name.endswith(mode):
             single_mode(mode, path, quiet, subset, limit, subset_limit)
             return

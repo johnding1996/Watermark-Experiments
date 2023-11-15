@@ -6,6 +6,8 @@ import tempfile
 from tqdm.auto import tqdm
 import dotenv
 from dev import (
+    LIMIT,
+    SUBSET_LIMIT,
     check_file_existence,
     existence_operation,
     existence_to_indices,
@@ -163,7 +165,7 @@ def report(path, quiet, limit):
 @click.option("--dry", "-d", is_flag=True, default=False, help="Dry run")
 @click.option("--subset", "-s", is_flag=True, default=False, help="Run on subset only")
 @click.option("--quiet", "-q", is_flag=True, default=False, help="Quiet mode")
-def main(path, dry, subset, quiet, limit=5000, subset_limit=1000):
+def main(path, dry, subset, quiet, limit=LIMIT, subset_limit=SUBSET_LIMIT):
     _, _, _, source_name = parse_image_dir_path(path, quiet=quiet)
     # Reverse is only required for real and tree_ring watermarked images
     if not source_name in ["real", "tree_ring", "real_tree_ring"]:

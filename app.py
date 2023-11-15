@@ -1,4 +1,5 @@
 import os
+import numpy as np
 import gradio as gr
 from git import Repo
 from dev import *
@@ -30,15 +31,57 @@ def reload_results():
         raise gr.Error(e)
 
 
-def summarize_status(dataset_dropdown, status_checkbox_group):
-    return []
+####################################################################################################
+# Tab: Experiment Progress
+
+
+def show_progress(progress_dataset_name_dropdown, progress_source_name_dropdown):
+    try:
+        dataset_name = (
+            (progress_dataset_name_dropdown.replace("-", "").replace(" ", "").lower())
+            if progress_dataset_name_dropdown != "All"
+            else None
+        )
+        source_name = (
+            {
+                "Real": "real",
+                "Tree-Ring": "tree_ring",
+                "Stable-Signature": "stable_sig",
+                "Stega-Stamp": "stegastamp",
+            }[progress_source_name_dropdown]
+            if progress_source_name_dropdown != "All"
+            else None
+        )
+        json_dict = get_all_json_paths(
+            lambda _dataset_name, _attack_name, _attack_strength, _source_name, _result_type: (
+                _dataset_name == dataset_name
+                if dataset_name
+                else True
+                and (_source_name.startswith(source_name) if source_name else False)
+                if source_name
+                else True
+            )
+        )
+        progress_dict = {
+            (key[0], key[3], key[1], key[2]): [None, None, None, None]
+            for key in json_dict.keys()
+        }
+        for key, json_path in json_dict.items():
+            progress_dict[(key[0], key[3], key[1], key[2])][
+                ["status", "reverse", "decode", "metric"].index(key[4])
+            ] = get_progress_from_json(json_path)
+        return gr.update(
+            value=[[*key, *progress_dict[key]] for key in progress_dict.keys()],
+        )
+    except Exception as e:
+        raise gr.Error(e)
 
 
 ####################################################################################################
 # Tab: Image Folder Viewer
 
 
-def find_folder_attack_names(
+def find_folder_by_dataset_source(
     folder_dataset_name_dropdown,
     folder_source_name_dropdown,
 ):
@@ -46,62 +89,62 @@ def find_folder_attack_names(
         gr.Info("Please select dataset and source first")
         return gr.update(choices=[])
     try:
-        target_dataset_name = (
+        dataset_name = (
             folder_dataset_name_dropdown.replace("-", "").replace(" ", "").lower()
         )
-        target_source_name = {
+        source_name = {
             "Real": "real",
             "Tree-Ring": "tree_ring",
             "Stable-Signature": "stable_sig",
             "Stega-Stamp": "stegastamp",
         }[folder_source_name_dropdown]
         json_dict = get_all_json_paths(
-            lambda dataset_name, attack_name, attack_strength, source_name, result_type: (
-                dataset_name == target_dataset_name
-                and (
-                    source_name.startswith(target_source_name) if source_name else False
-                )
+            lambda _dataset_name, _attack_name, _attack_strength, _source_name, _result_type: (
+                _dataset_name == dataset_name
+                and (_source_name.startswith(source_name) if source_name else False)
             )
         )
         if len(json_dict) == 0:
-            gr.Warning("No JSON file is found")
+            gr.Warning("No image folder is found")
             return gr.update(choices=[])
         attack_names = set([key[1] for key in json_dict.keys()])
         attack_names.discard(None)
-        return gr.update(choices=[None] + list(sorted(attack_names)), value=None)
+        return gr.update(choices=["None"] + list(sorted(attack_names)), value="None")
     except Exception as e:
         raise gr.Error(e)
 
 
-def find_folder_attack_strengths(
+def find_folder_by_attack_name(
     folder_dataset_name_dropdown,
     folder_source_name_dropdown,
     folder_attack_name_dropdown,
 ):
     if not folder_attack_name_dropdown:
-        return gr.update(choices=[None], value=None)
+        return gr.update(choices=["None"], value="None")
     try:
-        target_dataset_name = (
+        dataset_name = (
             folder_dataset_name_dropdown.replace("-", "").replace(" ", "").lower()
         )
-        target_source_name = {
+        source_name = {
             "Real": "real",
             "Tree-Ring": "tree_ring",
             "Stable-Signature": "stable_sig",
             "Stega-Stamp": "stegastamp",
         }[folder_source_name_dropdown]
-        target_attack_name = folder_attack_name_dropdown
+        attack_name = (
+            folder_attack_name_dropdown
+            if not folder_attack_name_dropdown == "None"
+            else None
+        )
         json_dict = get_all_json_paths(
-            lambda dataset_name, attack_name, attack_strength, source_name, result_type: (
-                dataset_name == target_dataset_name
-                and (
-                    source_name.startswith(target_source_name) if source_name else False
-                )
-                and attack_name == target_attack_name
+            lambda _dataset_name, _attack_name, _attack_strength, _source_name, _result_type: (
+                _dataset_name == dataset_name
+                and (_source_name.startswith(source_name) if source_name else False)
+                and _attack_name == attack_name
             )
         )
         if len(json_dict) == 0:
-            gr.Warning("No JSON file is found")
+            gr.Warning("No image folder is found")
             return gr.update(choices=[])
         attack_strengths = list(sorted(set([key[2] for key in json_dict.keys()])))
         return gr.update(choices=attack_strengths, value=attack_strengths[0])
@@ -116,29 +159,38 @@ def retrieve_folder_view(
     folder_attack_strength_dropdown,
 ):
     try:
-        target_dataset_name = (
+        dataset_name = (
             folder_dataset_name_dropdown.replace("-", "").replace(" ", "").lower()
         )
-        target_source_name = {
+        source_name = {
             "Real": "real",
             "Tree-Ring": "tree_ring",
             "Stable-Signature": "stable_sig",
             "Stega-Stamp": "stegastamp",
         }[folder_source_name_dropdown]
-        target_attack_name = folder_attack_name_dropdown
-        target_attack_strength = (
+        attack_name = (
+            folder_attack_name_dropdown
+            if not folder_attack_name_dropdown == "None"
+            else None
+        )
+        attack_strength = (
             float(folder_attack_strength_dropdown)
-            if folder_attack_strength_dropdown
+            if not (
+                folder_attack_strength_dropdown is None
+                or folder_attack_strength_dropdown == "None"
+            )
             else None
         )
         json_dict = get_all_json_paths(
-            lambda dataset_name, attack_name, attack_strength, source_name, result_type: (
-                dataset_name == target_dataset_name
+            lambda _dataset_name, _attack_name, _attack_strength, _source_name, _result_type: (
+                _dataset_name == dataset_name
+                and (_source_name.startswith(source_name) if _source_name else False)
+                and _attack_name == attack_name
                 and (
-                    source_name.startswith(target_source_name) if source_name else False
+                    abs(_attack_strength - attack_strength) < 1e-5
+                    if (_attack_strength is not None and attack_strength is not None)
+                    else (_attack_strength is None and attack_strength is None)
                 )
-                and attack_name == target_attack_name
-                and match_attack_strengths(attack_strength, target_attack_strength)
             )
         )
         json_paths = {
@@ -150,58 +202,127 @@ def retrieve_folder_view(
         result_types_found = [
             result_type for result_type in json_paths.keys() if json_paths[result_type]
         ]
+
+        # Experiment Progress
         if len(result_types_found) == 0:
-            gr.Warning("No JSON file is found")
+            gr.Warning("No image folder is found")
+            return [0] * 4 + [[]] + ["N/A"] * 12
         else:
-            gr.Info(f"Found JSON types: {result_types_found}")
-        return [
-            gr.update(value=get_progress_from_json(paths[0]) / 5000 * 100)
-            if paths
-            else gr.update(value=0)
-            for paths in json_paths.values()
-        ]
+            updates = [
+                gr.update(value=(int(get_progress_from_json(paths[0]) / 5) / 10))
+                if paths
+                else gr.update(value=0)
+                for paths in json_paths.values()
+            ]
+
+        # Image Examples
+        if "status" not in result_types_found:
+            gr.Warning("This image folder miss the status JSON")
+            return updates + [[]] + ["N/A"] * 12
+        else:
+            updates += [gr.update(value=get_example_from_json(json_paths["status"][0]))]
+
+        # Evaluation Distances
+        if "decode" not in result_types_found:
+            gr.Warning("This image folder has not been decoded")
+            return updates + ["N/A"] * 12
+        else:
+            distance_dict = {
+                mode: get_distances_from_json(json_paths["decode"][0], mode)
+                for mode in WATERMARK_METHODS
+            }
+            updates += [
+                gr.update(
+                    value=np.mean(distance_dict[mode])
+                    if distance_dict[mode] is not None
+                    else "N/A"
+                )
+                for mode in WATERMARK_METHODS
+            ]
+
+        # Evaluation Performance
+        if source_name == "real" or attack_name is None or attack_strength is None:
+            return updates + ["N/A"] * 9
+        else:
+            performances = [
+                performance
+                for mode in EVALUATION_SETUPS
+                for performance in get_performance(
+                    dataset_name, source_name, attack_name, attack_strength, mode
+                )
+            ]
+            updates += [
+                gr.update(value=performance if performance is not None else "N/A")
+                for performance in performances
+            ]
+            return updates
+        # Quality Metrics
+        if attack_name is None or attack_strength is None:
+            pass
+
     except Exception as e:
         raise gr.Error(e)
 
 
+####################################################################################################
 # Gradio UIs
+
 with gr.Blocks() as app:
     with gr.Row():
-        reload_button = gr.Button("Reload")
+        reload_button = gr.Button("Reload Results")
         reload_status_textbox = gr.Textbox(label="Result Status", placeholder="")
         reload_button.click(reload_results, inputs=None, outputs=reload_status_textbox)
     with gr.Tabs():
-        with gr.Tab("Experiment Status"):
+        with gr.Tab("Experiment Progress"):
             with gr.Row():
-                with gr.Column(scale=10):
-                    status_dataset_name_dropdown = gr.Dropdown(
+                with gr.Column(scale=30):
+                    progress_dataset_name_dropdown = gr.Dropdown(
                         choices=["All", "DiffusionDB", "MS-COCO", "DALL-E 3"],
+                        value="All",
                         label="Dataset",
                     )
-                with gr.Column(scale=20):
-                    status_option_checkbox_group = gr.CheckboxGroup(
-                        ["Show Individual Strength", ""],
-                        label="Options",
+                with gr.Column(scale=30):
+                    progress_source_name_dropdown = gr.Dropdown(
+                        choices=[
+                            "All",
+                            "Real",
+                            "Tree-Ring",
+                            "Stable-Signature",
+                            "Stega-Stamp",
+                        ],
+                        value="All",
+                        label="Source",
                     )
-                status_generate_button = gr.Button("Show")
-            status_dataframe = gr.DataFrame(
+                progress_show_button = gr.Button("Show")
+            progress_dataframe = gr.DataFrame(
                 headers=[
                     "Dataset",
-                    "Attack",
-                    "# of Strengths",
                     "Source",
-                    "Attack Progress",
-                    "Reverse Progress",
-                    "Decode Progress",
-                    "Metric Progress",
+                    "Attack",
+                    "Strength",
+                    "# Generated",
+                    "# Reversed",
+                    "# Decoded",
+                    "# Metricized",
                 ],
+                datatype=[
+                    "str",
+                    "str",
+                    "str",
+                    "str",
+                    "number",
+                    "number",
+                    "number",
+                    "number",
+                ],
+                col_count=(8, "fixed"),
                 type="array",
                 interactive=False,
             )
-            status_generate_button.click(
-                summarize_status,
-                inputs=[status_dataset_name_dropdown, status_option_checkbox_group],
-                outputs=status_dataframe,
+            progress_show_button.click(
+                show_progress,
+                inputs=[progress_dataset_name_dropdown, progress_source_name_dropdown],
+                outputs=progress_dataframe,
             )
         with gr.Tab("Image Folder Viewer"):
             with gr.Row():
@@ -230,21 +351,76 @@ with gr.Blocks() as app:
                     folder_attack_strength_dropdown = gr.Dropdown(
                         choices=[], allow_custom_value=True, label="Stength"
                     )
-            with gr.Group():
-                folder_generation_progress = gr.Slider(
-                    label="Generation Progress (%)", interactive=False
+            with gr.Accordion("Experiment Progress"):
+                with gr.Row():
+                    folder_generation_progress = gr.Slider(
+                        label="Generation Progress (%)", interactive=False
+                    )
+                    folder_reverse_progress = gr.Slider(
+                        label="Reverse Progress (%)", interactive=False
+                    )
+                with gr.Row():
+                    folder_decode_progress = gr.Slider(
+                        label="Decode Progress (%)", interactive=False
+                    )
+                    folder_metric_progress = gr.Slider(
+                        label="Metric Progress (%)", interactive=False
+                    )
+            with gr.Accordion("Image Examples"):
+                folder_example_gallery = gr.Gallery(
+                    value=[],
+                    show_label=False,
+                    columns=4,
+                    rows=1,
+                    height=512,
                 )
-                folder_reverse_progress = gr.Slider(
-                    label="Reverse Progress (%)", interactive=False
-                )
-                folder_decode_progress = gr.Slider(
-                    label="Decode Progress (%)", interactive=False
-                )
-                folder_metric_progress = gr.Slider(
-                    label="Metric Progress (%)", interactive=False
-                )
+            with gr.Accordion("Evaluation Distances"):
+                with gr.Row():
+                    folder_eval_tree_ring_distance_number = gr.Textbox(
+                        label="Tree-Ring Nomalized MSE", interactive=False
+                    )
+                    folder_eval_stable_signature_distance_number = gr.Textbox(
+                        label="Stable-Signature Bit Error Rate", interactive=False
+                    )
+                    folder_eval_stega_stamp_distance_number = gr.Textbox(
+                        label="Stega-Stamp Bit Error Rate", interactive=False
+                    )
+            with gr.Accordion("Evaluation Performance"):
+                with gr.Accordion("Combined Setup"):
+                    with gr.Row():
+                        folder_eval_combined_acc_number = gr.Textbox(
+                            label="Mean Accuracy", interactive=False
+                        )
+                        folder_eval_combined_auc_number = gr.Textbox(
+                            label="AUC Score", interactive=False
+                        )
+                        folder_eval_combined_low_number = gr.Textbox(
+                            label="TPR@0.1%FPR", interactive=False
+                        )
+                with gr.Accordion("Removal Setup"):
+                    with gr.Row():
+                        folder_eval_removal_acc_number = gr.Textbox(
+                            label="Mean Accuracy", interactive=False
+                        )
+                        folder_eval_removal_auc_number = gr.Textbox(
+                            label="AUC Score", interactive=False
+                        )
+                        folder_eval_removal_low_number = gr.Textbox(
+                            label="TPR@0.1%FPR", interactive=False
+                        )
+                with gr.Accordion("Spoofing Setup"):
+                    with gr.Row():
+                        folder_eval_spoofing_acc_number = gr.Textbox(
+                            label="Mean Accuracy", interactive=False
+                        )
+                        folder_eval_spoofing_auc_number = gr.Textbox(
+                            label="AUC Score", interactive=False
+                        )
+                        folder_eval_spoofing_low_number = gr.Textbox(
+                            label="TPR@0.1%FPR", interactive=False
+                        )
             folder_find_button.click(
-                find_folder_attack_names,
+                find_folder_by_dataset_source,
                 inputs=[
                     folder_dataset_name_dropdown,
                     folder_source_name_dropdown,
@@ -252,7 +428,7 @@ with gr.Blocks() as app:
                 outputs=folder_attack_name_dropdown,
             )
             folder_attack_name_dropdown.change(
-                find_folder_attack_strengths,
+                find_folder_by_attack_name,
                 inputs=[
                     folder_dataset_name_dropdown,
                     folder_source_name_dropdown,
@@ -273,6 +449,19 @@ with gr.Blocks() as app:
                     folder_reverse_progress,
                     folder_decode_progress,
                     folder_metric_progress,
+                    folder_example_gallery,
+                    folder_eval_tree_ring_distance_number,
+                    folder_eval_stable_signature_distance_number,
+                    folder_eval_stega_stamp_distance_number,
+                    folder_eval_combined_acc_number,
+                    folder_eval_combined_auc_number,
+                    folder_eval_combined_low_number,
+                    folder_eval_removal_acc_number,
+                    folder_eval_removal_auc_number,
+                    folder_eval_removal_low_number,
+                    folder_eval_spoofing_acc_number,
+                    folder_eval_spoofing_auc_number,
+                    folder_eval_spoofing_low_number,
                 ],
             )
 
