@@ -31,7 +31,7 @@ from .parse import (
 )
 from .eval import (
     bit_error_rate,
-    normalized_mse,
+    complex_l1,
     message_distance,
 )
 from .aggregate import *

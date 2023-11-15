@@ -377,7 +377,7 @@ with gr.Blocks() as app:
             with gr.Accordion("Evaluation Distances"):
                 with gr.Row():
                     folder_eval_tree_ring_distance_number = gr.Textbox(
-                        label="Tree-Ring Nomalized MSE", interactive=False
+                        label="Tree-Ring Complex L1", interactive=False
                     )
                     folder_eval_stable_signature_distance_number = gr.Textbox(
                         label="Stable-Signature Bit Error Rate", interactive=False

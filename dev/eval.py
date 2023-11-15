@@ -8,32 +8,31 @@ def bit_error_rate(pred, target):
     return np.mean(pred != target)
 
 
-def normalized_mse(pred, target):
+def complex_l1(pred, target):
     if not pred.dtype == target.dtype == np.float16:
         raise ValueError(
-            f"Cannot compute Normalized MSE for {pred.dtype} and {target.dtype}"
+            f"Cannot compute Complex L1 for {pred.dtype} and {target.dtype}"
         )
-    # Cast to float32 to avoid numerical error and overflow
-    pred, target = pred.astype(np.float32), target.astype(np.float32)
-    return (((pred - target) / np.std(pred)) ** 2).mean()
+    # Cast to float32 to avoid large numerical errors
+    pred = pred.astype(np.float32).reshape(2, -1)
+    target = target.astype(np.float32).reshape(2, -1)
+    return np.sqrt(((pred - target) ** 2).sum(0)).mean()
 
 
 def message_distance(pred, target):
     if target.dtype == bool:
         return bit_error_rate(pred, target)
     elif target.dtype == np.float16:
-        return normalized_mse(pred, target)
+        return complex_l1(pred, target)
     else:
         raise ValueError(f"Unsupported dtype {target.dtype}")
 
 
-def detection_perforamance(watermarked_distances, original_distances):
-    if not len(watermarked_distances) == len(original_distances):
-        raise ValueError(
-            f"Length of watermarked_distances ({len(watermarked_distances)}) and original_distances ({len(original_distances)}) must be equal"
-        )
-    y_true = [0] * len(watermarked_distances) + [1] * len(original_distances)
-    y_score = (-np.array(watermarked_distances + original_distances)).tolist()
+def detection_perforamance(original_distances, watermarked_distances):
+    if not len(original_distances) == len(watermarked_distances):
+        raise ValueError(f"Length of distances must be equal")
+    y_true = [0] * len(original_distances) + [1] * len(watermarked_distances)
+    y_score = (-np.array(original_distances + watermarked_distances)).tolist()
     fpr, tpr, thresholds = metrics.roc_curve(y_true, y_score, pos_label=1)
     acc = np.max(1 - (fpr + (1 - tpr)) / 2)
     auc = metrics.auc(fpr, tpr)
