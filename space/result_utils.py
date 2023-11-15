@@ -1,5 +1,47 @@
 import os
+import stat
 import warnings
+import orjson
+
+
+# TODO: delete after refactoring
+DECODE_MODES = ["tree_ring", "stable_sig", "stegastamp"]
+
+
+def chmod_group_write(path):
+    if not os.path.exists(path):
+        raise ValueError(f"Path {path} does not exist")
+    if os.stat(path).st_uid == os.getuid():
+        current_permissions = stat.S_IMODE(os.lstat(path).st_mode)
+        os.chmod(path, current_permissions | stat.S_IWGRP)
+
+
+def compare_dicts(dict1, dict2):
+    if dict1.keys() != dict2.keys():
+        return False
+    for key in dict1:
+        if isinstance(dict1[key], dict) and isinstance(dict2[key], dict):
+            if not compare_dicts(dict1[key], dict2[key]):
+                return False
+        else:
+            if dict1[key] != dict2[key]:
+                return False
+    return True
+
+
+def load_json(filepath):
+    with open(filepath, "rb") as json_file:
+        return orjson.loads(json_file.read())
+
+
+def save_json(data, filepath):
+    if os.path.exists(filepath):
+        existing_data = load_json(filepath)
+        if compare_dicts(data, existing_data):
+            return
+    with open(filepath, "wb") as json_file:
+        json_file.write(orjson.dumps(data))
+    chmod_group_write(filepath)
 
 
 def parse_json_path(path):
@@ -85,3 +127,37 @@ def get_all_json_paths(criteria=None):
         except ValueError as e:
             warnings.warn(f"Found invalid JSON file {path}, {e}, skipping")
     return json_dict
+
+
+def match_attack_strengths(strength1, strength2):
+    if strength1 is None or strength2 is None:
+        return strength1 is None and strength2 is None
+    else:
+        return abs(strength1 - strength2) < 1e-5
+
+
+def get_progress_from_json(path):
+    (
+        _,
+        _,
+        _,
+        source_name,
+        result_type,
+    ) = parse_json_path(path)
+    data = load_json(path)
+    if result_type == "status":
+        return sum([data[str(i)]["exist"] for i in range(len(data))])
+    elif result_type == "reverse":
+        return sum([data[str(i)] for i in range(len(data))])
+    elif result_type == "decode":
+        for mode in DECODE_MODES:
+            if source_name.endswith(mode):
+                return sum([data[str(i)][mode] is not None for i in range(len(data))])
+        return sum(
+            [
+                (all([data[str(i)][mode] is not None for mode in DECODE_MODES]))
+                for i in range(len(data))
+            ]
+        )
+    elif result_type == "metric":
+        return 0

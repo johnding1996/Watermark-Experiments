@@ -9,6 +9,7 @@ import warnings
 from tqdm.auto import tqdm
 import dotenv
 from space import (
+    DECODE_MODES,
     check_file_existence,
     existence_operation,
     existence_to_indices,
@@ -17,13 +18,24 @@ from space import (
     load_json,
     encode_array_to_string,
 )
-from utils import to_tensor
 
 dotenv.load_dotenv(override=False)
 warnings.filterwarnings("ignore")
 
 
 def get_indices(mode, path, quiet, subset, limit, subset_limit):
+    json_path = os.path.join(
+        os.environ.get("RESULT_DIR"),
+        str(path).split("/")[-2],
+        f"{str(path).split('/')[-1]}-decode.json",
+    )
+    if os.path.exists(json_path):
+        data = load_json(json_path)
+        decoded_existences = [data[str(i)][mode] is not None for i in range(limit)]
+        if (not subset and sum(decoded_existences) == limit) or (
+            subset and sum(decoded_existences[:subset_limit]) == subset_limit
+        ):
+            return []
     image_existences = check_file_existence(path, name_pattern="{}.png", limit=limit)
     reversed_latents_existences = check_file_existence(
         path, name_pattern="{}_reversed.pkl", limit=limit
@@ -36,18 +48,11 @@ def get_indices(mode, path, quiet, subset, limit, subset_limit):
         existences = reversed_latents_existences
     elif mode in ["stable_sig", "stegastamp"]:
         existences = image_existences
-    json_path = os.path.join(
-        os.environ.get("RESULT_DIR"),
-        str(path).split("/")[-2],
-        f"{str(path).split('/')[-1]}-decode.json",
-    )
     if not os.path.exists(json_path):
         indices = existence_to_indices(
             existences, limit=limit if not subset else subset_limit
         )
     else:
-        data = load_json(json_path)
-        decoded_existences = [data[str(i)][mode] is not None for i in range(limit)]
         indices = existence_to_indices(
             existence_operation(existences, decoded_existences, op="difference"),
             limit=limit if not subset else subset_limit,
@@ -171,7 +176,7 @@ def decode_image_or_reversed_latents(mode, model, gpu, inputs):
 
 def worker(mode, gpu, path, indices, lock, counter, results):
     model = init_decoder_model(mode, gpu)
-    batch_size = {"tree_ring": 128, "stable_sig": 16, "stegastamp": 8}[mode]
+    batch_size = {"tree_ring": 32, "stable_sig": 4, "stegastamp": 4}[mode]
     for it in range(0, len(indices), batch_size):
         inputs = load_image_or_reversed_latents(
             mode, path, indices[it : min(it + batch_size, len(indices))]
@@ -249,9 +254,8 @@ def report(mode, path, results, quiet, limit):
         data = {}
         for idx in range(limit):
             data[str(idx)] = {
-                "tree_ring": results.get(idx) if mode == "tree_ring" else None,
-                "stable_sig": results.get(idx) if mode == "stable_sig" else None,
-                "stegastamp": results.get(idx) if mode == "stegastamp" else None,
+                target_mode: results.get(idx) if mode == target_mode else None
+                for target_mode in DECODE_MODES
             }
     else:
         data = load_json(json_path)
@@ -285,16 +289,14 @@ def main(path, dry, subset, quiet, limit=5000, subset_limit=1000):
     _, _, _, source_name = parse_image_dir_path(path, quiet=quiet)
     # Reverse is only required for real and tree_ring watermarked images
     if source_name == "real":
-        for mode in ["tree_ring", "stable_sig", "stegastamp"]:
+        for mode in DECODE_MODES:
             single_mode(mode, path, quiet, subset, limit, subset_limit)
-    elif source_name.endswith("tree_ring"):
-        single_mode("tree_ring", path, quiet, subset, limit, subset_limit)
-    elif source_name.endswith("stable_sig"):
-        single_mode("stable_sig", path, quiet, subset, limit, subset_limit)
-    elif source_name.endswith("stegastamp"):
-        single_mode("stegastamp", path, quiet, subset, limit, subset_limit)
-    else:
-        raise ValueError(f"Invalid source name {source_name} encountered")
+            return
+    for mode in DECODE_MODES:
+        if source_name.endswith(mode):
+            single_mode(mode, path, quiet, subset, limit, subset_limit)
+            return
+    raise ValueError(f"Invalid source name {source_name} encountered")
 
 
 if __name__ == "__main__":

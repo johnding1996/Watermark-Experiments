@@ -1,47 +1,9 @@
-import os
-import stat
 import orjson
 import gzip
 import base64
 from io import BytesIO
 import numpy as np
 from PIL import Image
-
-
-def chmod_group_write(path):
-    if not os.path.exists(path):
-        raise ValueError(f"Path {path} does not exist")
-    if os.stat(path).st_uid == os.getuid():
-        current_permissions = stat.S_IMODE(os.lstat(path).st_mode)
-        os.chmod(path, current_permissions | stat.S_IWGRP)
-
-
-def compare_dicts(dict1, dict2):
-    if dict1.keys() != dict2.keys():
-        return False
-    for key in dict1:
-        if isinstance(dict1[key], dict) and isinstance(dict2[key], dict):
-            if not compare_dicts(dict1[key], dict2[key]):
-                return False
-        else:
-            if dict1[key] != dict2[key]:
-                return False
-    return True
-
-
-def load_json(filepath):
-    with open(filepath, "rb") as json_file:
-        return orjson.loads(json_file.read())
-
-
-def save_json(data, filepath):
-    if os.path.exists(filepath):
-        existing_data = load_json(filepath)
-        if compare_dicts(data, existing_data):
-            return
-    with open(filepath, "wb") as json_file:
-        json_file.write(orjson.dumps(data))
-    chmod_group_write(filepath)
 
 
 def encode_array_to_string(array):
@@ -81,3 +43,20 @@ def decode_image_from_string(encoded_string):
     # Read the image from bytes
     image = Image.open(BytesIO(img_data))
     return image
+
+
+DECODE_MODES = ["tree_ring", "stable_sig", "stegastamp"]
+
+GROUND_TRUTH_MESSAGES = {
+    "tree_ring": decode_array_from_string(
+        "H4sIALRwUmUC/42SvYrCQBSFLW18iam3EZcUFgErkYBFSLcYENZgISgoiMjCVj6FzyFCCoUlTQgrE8TnkcNhcEZIbjhw7x3Ox/zdu1fr+XQ1U/0vr/c5+VDfmx1WKlksp5uup35anX+jLHrVWFHX0FS2cw2h8x+z69KBYs1MxvVjDXkPZpvh/iC8B1SUzKTMWTZTlEV5iBBtzqVAHKJEI4KrphL9OwInU1AzUqbku9W/s+mf1f+93D+5/1Vz8z5j+djIv79qrKj2wFS20x5Al5LZdelApxszGdc/3aBUM9sM9weRasgPmEmZs2zGD/xgmyPanEuB2ObHDBFcNXXMwiE4mYKakTIl363+nU3/rP7v5f7J/a+am/cZewKA1ipNFgUAAA=="
+    ),
+    "stable_sig": decode_array_from_string(
+        "H4sIADtrUmUC/6tWKs5ILEhVsoo2sYjVUUopqQRxlJLy83OUahkYGRkZgBBMMIAAhAvmwUUZIRIgcQBxGJ0kTgAAAA=="
+    ),
+    "stegastamp": decode_array_from_string(
+        "H4sIAGRrUmUC/6tWKs5ILEhVsoo2NDCI1VFKKakE8ZSS8vNzlGoZGBkZGRhAmAFCgxGIC+dBCAaYEEyCEVkOzISrYIToZIAoY2AEAG5jy4ODAAAA"
+    ),
+}
+
+METRIC_MODES = []
