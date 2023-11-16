@@ -8,22 +8,36 @@ DATASET_NAMES = {
     "dalle3": "DALL-E 3",
 }
 
-WATERMARK_METHODS = {"tree_ring": "Tree-Ring" , "stable_sig": "Stable-Signature", "stegastamp": "Stega-Stamp"}
+WATERMARK_METHODS = {
+    "tree_ring": "Tree-Ring",
+    "stable_sig": "Stable-Signature",
+    "stegastamp": "Stega-Stamp",
+}
 
-PERFORMANCE_METRICS = {"acc_1": "Mean Accuracy", "auc_1": "AUC", "low100_1": "TPR@1%FPR", "low1000_1": "TPR@0.1%FPR"}
+PERFORMANCE_METRICS = {
+    "acc_1": "Mean Accuracy",
+    "auc_1": "AUC",
+    "low100_1": "TPR@1%FPR",
+    "low1000_1": "TPR@0.1%FPR",
+}
 
 QUALITY_METRICS = {
     "legacy_fid": "Legacy FID",
     "clip_fid": "CLIP FID",
     "psnr": "PSNR",
     "ssim": "SSIM",
+    "nmi": "Normed Mutual-Info",
     "lpips": "LPIPS",
     "aesthetics": "Delta Aesthetics",
     "artifacts": "Delta Artifacts",
     "clip_score": "Delta CLIP-Score",
 }
 
-EVALUATION_SETUPS = {"combined": "Combined", "removal": "Removal", "spoofing": "Spoofing"}
+EVALUATION_SETUPS = {
+    "combined": "Combined",
+    "removal": "Removal",
+    "spoofing": "Spoofing",
+}
 
 GROUND_TRUTH_MESSAGES = {
     "tree_ring": decode_array_from_string(

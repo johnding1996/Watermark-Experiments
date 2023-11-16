@@ -61,7 +61,7 @@ def get_indices(mode, path, quiet, subset, limit, subset_limit):
     return indices
 
 
-def init_decoder_model(mode, gpu):
+def init_model(mode, gpu):
     if mode == "tree_ring":
         size = 64
         radius = 10
@@ -96,7 +96,7 @@ def init_decoder_model(mode, gpu):
         )
 
 
-def load_image_or_reversed_latents(mode, path, indices):
+def load_files(mode, path, indices):
     if mode == "tree_ring":
         return torch.cat(
             [
@@ -143,7 +143,7 @@ def load_image_or_reversed_latents(mode, path, indices):
         )
 
 
-def decode_image_or_reversed_latents(mode, model, gpu, inputs):
+def decode(mode, model, gpu, inputs):
     if mode == "tree_ring":
         fft_latents = torch.fft.fftshift(
             torch.fft.fft2(inputs.to(f"cuda:{gpu}")), dim=(-1, -2)
@@ -176,13 +176,13 @@ def decode_image_or_reversed_latents(mode, model, gpu, inputs):
 
 
 def worker(mode, gpu, path, indices, lock, counter, results):
-    model = init_decoder_model(mode, gpu)
+    model = init_model(mode, gpu)
     batch_size = {"tree_ring": 32, "stable_sig": 4, "stegastamp": 4}[mode]
     for it in range(0, len(indices), batch_size):
-        inputs = load_image_or_reversed_latents(
+        inputs = load_files(
             mode, path, indices[it : min(it + batch_size, len(indices))]
         )
-        messages = decode_image_or_reversed_latents(mode, model, gpu, inputs)
+        messages = decode(mode, model, gpu, inputs)
         with lock:
             counter.value += inputs.shape[0]
             for idx, message in zip(
@@ -255,8 +255,8 @@ def report(mode, path, results, quiet, limit):
         data = {}
         for idx in range(limit):
             data[str(idx)] = {
-                target_mode: results.get(idx) if mode == target_mode else None
-                for target_mode in WATERMARK_METHODS.keys()
+                _mode: results.get(idx) if mode == _mode else None
+                for _mode in WATERMARK_METHODS.keys()
             }
     else:
         for idx, message in results.items():

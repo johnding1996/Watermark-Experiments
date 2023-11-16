@@ -3,8 +3,7 @@ from PIL import Image
 import open_clip
 
 
-def load_open_clip_model_preprocess_and_tokenizer():
-    device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+def load_open_clip_model_preprocess_and_tokenizer(device=torch.device("cuda")):
     clip_model, _, clip_preprocess = open_clip.create_model_and_transforms(
         "ViT-g-14", pretrained="laion2b_s12b_b42k", device=device
     )

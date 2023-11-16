@@ -4,8 +4,7 @@ from transformers import CLIPModel, CLIPProcessor
 from .aesthetics_scorer import preprocess, load_model
 
 
-def load_aesthetics_and_artifacts_models():
-    device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+def load_aesthetics_and_artifacts_models(device=torch.device("cuda")):
     model = CLIPModel.from_pretrained("laion/CLIP-ViT-H-14-laion2B-s32B-b79K")
     vision_model = model.vision_model
     vision_model.to(device)
