@@ -17,7 +17,7 @@ def get_performance(dataset_name, source_name, attack_name, attack_strength, mod
         raise ValueError(
             f"Cannot compute performance for {dataset_name}, {source_name}, {attack_name}, {attack_strength}"
         )
-    if mode not in EVALUATION_SETUPS:
+    if mode not in EVALUATION_SETUPS.keys():
         raise ValueError(f"Unknown evaluation setup {mode}")
 
     try:

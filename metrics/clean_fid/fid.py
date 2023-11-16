@@ -7,7 +7,7 @@ import numpy as np
 from PIL import Image
 from scipy import linalg
 import zipfile
-import inspect
+from torch.hub import get_dir
 from .utils import *
 from .features import build_feature_extractor, get_reference_statistics
 from .resize import *
@@ -435,7 +435,7 @@ Test if a custom statistic exists
 
 def test_stats_exists(name, mode, model_name="inception_v3", metric="FID"):
     stats_folder = os.path.join(
-        os.path.dirname(inspect.getmodule(inspect.currentframe()).__file__), "stats"
+        get_dir(), "fid_stats"
     )
     split, res = "custom", "na"
     if model_name == "inception_v3":
@@ -457,7 +457,7 @@ Remove the custom FID features from the stats folder
 
 def remove_custom_stats(name, mode="clean", model_name="inception_v3"):
     stats_folder = os.path.join(
-        os.path.dirname(inspect.getmodule(inspect.currentframe()).__file__), "stats"
+        get_dir(), "fid_stats"
     )
     # remove the FID stats
     split, res = "custom", "na"
@@ -466,7 +466,7 @@ def remove_custom_stats(name, mode="clean", model_name="inception_v3"):
     else:
         model_modifier = "_" + model_name
     outf = os.path.join(
-        stats_folder, f"{name}_{mode}{model_modifier}_{split}_{res}.npz".lower()
+        stats_folder, f"{name}_{mode}{model_modifier}_{split}_{res}.npz"
     )
     if not os.path.exists(outf):
         msg = f"The stats file {name} does not exist."
@@ -499,7 +499,7 @@ def make_custom_stats(
     verbose=True,
 ):
     stats_folder = os.path.join(
-        os.path.dirname(inspect.getmodule(inspect.currentframe()).__file__), "stats"
+        get_dir(), "fid_stats"
     )
     os.makedirs(stats_folder, exist_ok=True)
     split, res = "custom", "na"
@@ -508,7 +508,7 @@ def make_custom_stats(
     else:
         model_modifier = "_" + model_name
     outf = os.path.join(
-        stats_folder, f"{name}_{mode}{model_modifier}_{split}_{res}.npz".lower()
+        stats_folder, f"{name}_{mode}{model_modifier}_{split}_{res}.npz"
     )
     # if the custom stat file already exists
     if os.path.exists(outf):
@@ -551,7 +551,7 @@ def make_custom_stats(
 
     # KID stats
     outf = os.path.join(
-        stats_folder, f"{name}_{mode}{model_modifier}_{split}_{res}_kid.npz".lower()
+        stats_folder, f"{name}_{mode}{model_modifier}_{split}_{res}_kid.npz"
     )
     print(f"saving custom KID stats to {outf}")
     np.savez_compressed(outf, feats=np_feats)

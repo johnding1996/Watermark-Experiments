@@ -38,6 +38,7 @@ def compute_fid(
     images2,
     mode="legacy",
     device=None,
+    batch_size=64,
     num_workers=None,
     verbose=False,
 ):
@@ -77,13 +78,26 @@ def compute_fid(
         # Save images to temp dir if needed
         path1 = save_images_to_temp(images1, num_workers=num_workers, verbose=verbose)
         path2 = save_images_to_temp(images2, num_workers=num_workers, verbose=verbose)
-
+        
+    # Attempt to cache statistics for path1
+    if not fid.test_stats_exists(name=str(os.path.abspath(path1)).replace("/", "_"), mode=mode, model_name=model_name):
+        fid.make_custom_stats(
+            name=str(os.path.abspath(path1)).replace("/", "_"),
+            fdir=path1,
+            mode=mode,
+            model_name=model_name,
+            device=device,
+            num_workers=num_workers,
+            verbose=verbose,
+        )
     fid_score = fid.compute_fid(
-        path1,
         path2,
+        dataset_name=str(os.path.abspath(path1)).replace("/", "_"),
+        dataset_split="custom",
         mode=mode,
         model_name=model_name,
         device=device,
+        batch_size=batch_size,
         num_workers=num_workers,
         verbose=verbose,
     )

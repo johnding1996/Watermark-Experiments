@@ -34,7 +34,13 @@ def detection_perforamance(original_distances, watermarked_distances):
     y_true = [0] * len(original_distances) + [1] * len(watermarked_distances)
     y_score = (-np.array(original_distances + watermarked_distances)).tolist()
     fpr, tpr, thresholds = metrics.roc_curve(y_true, y_score, pos_label=1)
-    acc = np.max(1 - (fpr + (1 - tpr)) / 2)
-    auc = metrics.auc(fpr, tpr)
-    low = tpr[np.where(fpr < 0.001)[0][-1]]
-    return acc, auc, low
+    acc_1 = np.max(1 - (fpr + (1 - tpr)) / 2)
+    auc_1 = metrics.auc(fpr, tpr)
+    low100_1 = tpr[np.where(fpr < 0.01)[0][-1]]
+    low1000_1 = tpr[np.where(fpr < 0.001)[0][-1]]
+    return {
+        "acc_1": acc_1,
+        "auc_1": auc_1,
+        "low100_1": low100_1,
+        "low1000_1": low1000_1,
+    }

@@ -2,25 +2,28 @@ from .io import decode_array_from_string
 
 LIMIT, SUBSET_LIMIT = 5000, 1000
 
-WATERMARK_METHODS = ["tree_ring", "stable_sig", "stegastamp"]
+DATASET_NAMES = {
+    "diffusiondb": "DiffusionDB",
+    "mscoco": "MS-COCO",
+    "dalle3": "DALL-E 3",
+}
 
-PERFORMANCE_METRICS = ["Mean Accuracy", "AUC", "TPR@0.1%FPR"]
+WATERMARK_METHODS = {"tree_ring": "Tree-Ring" , "stable_sig": "Stable-Signature", "stegastamp": "Stega-Stamp"}
 
-QUALITY_METRICS = [
-    "Legacy FID",
-    "Clean FID",
-    "CLIP FID",
-    "PSNR",
-    "SSIM",
-    "NMI",
-    "LPIPS",
-    "WATSON",
-    "Aesthetics Score",
-    "Artifacts Score",
-    "Delta CLIP Score",
-]
+PERFORMANCE_METRICS = {"acc_1": "Mean Accuracy", "auc_1": "AUC", "low100_1": "TPR@1%FPR", "low1000_1": "TPR@0.1%FPR"}
 
-EVALUATION_SETUPS = ["combined", "removal", "spoofing"]
+QUALITY_METRICS = {
+    "legacy_fid": "Legacy FID",
+    "clip_fid": "CLIP FID",
+    "psnr": "PSNR",
+    "ssim": "SSIM",
+    "lpips": "LPIPS",
+    "aesthetics": "Delta Aesthetics",
+    "artifacts": "Delta Artifacts",
+    "clip_score": "Delta CLIP-Score",
+}
+
+EVALUATION_SETUPS = {"combined": "Combined", "removal": "Removal", "spoofing": "Spoofing"}
 
 GROUND_TRUTH_MESSAGES = {
     "tree_ring": decode_array_from_string(

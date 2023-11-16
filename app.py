@@ -7,10 +7,14 @@ from dotenv import load_dotenv
 
 load_dotenv()
 result_dir = os.environ.get("RESULT_DIR")
-login_password = os.getenv("LOGIN_PASSWORD")
 github_token = os.environ.get("GITHUB_TOKEN")
 repo_url = os.environ.get("REPO_URL")
 branch_name = os.environ.get("BRANCH_NAME")
+
+SOURCE_NAME_DICT_REVERSED = {
+    "Not Watermarked": "real",
+    **{v: k for k, v in WATERMARK_METHODS.items()},
+}
 
 
 def reload_results():
@@ -47,12 +51,7 @@ def show_experiment_progress(
             else None
         )
         source_name = (
-            {
-                "Real": "real",
-                "Tree-Ring": "tree_ring",
-                "Stable-Signature": "stable_sig",
-                "Stega-Stamp": "stegastamp",
-            }[progress_source_name_dropdown]
+            SOURCE_NAME_DICT_REVERSED[progress_source_name_dropdown]
             if progress_source_name_dropdown != "All"
             else None
         )
@@ -95,12 +94,7 @@ def find_folder_by_dataset_source(
         dataset_name = (
             folder_dataset_name_dropdown.replace("-", "").replace(" ", "").lower()
         )
-        source_name = {
-            "Real": "real",
-            "Tree-Ring": "tree_ring",
-            "Stable-Signature": "stable_sig",
-            "Stega-Stamp": "stegastamp",
-        }[folder_source_name_dropdown]
+        source_name = SOURCE_NAME_DICT_REVERSED[folder_source_name_dropdown]
         json_dict = get_all_json_paths(
             lambda _dataset_name, _attack_name, _attack_strength, _source_name, _result_type: (
                 _dataset_name == dataset_name
@@ -112,7 +106,9 @@ def find_folder_by_dataset_source(
             return gr.update(choices=[])
         attack_names = set([key[1] for key in json_dict.keys()])
         attack_names.discard(None)
-        return gr.update(choices=["None"] + list(sorted(attack_names)), value="None")
+        return gr.update(
+            choices=["Not Attacked"] + sorted(list(attack_names)), value="Not Attacked"
+        )
     except Exception as e:
         raise gr.Error(e)
 
@@ -128,15 +124,10 @@ def find_folder_by_attack_name(
         dataset_name = (
             folder_dataset_name_dropdown.replace("-", "").replace(" ", "").lower()
         )
-        source_name = {
-            "Real": "real",
-            "Tree-Ring": "tree_ring",
-            "Stable-Signature": "stable_sig",
-            "Stega-Stamp": "stegastamp",
-        }[folder_source_name_dropdown]
+        source_name = SOURCE_NAME_DICT_REVERSED[folder_source_name_dropdown]
         attack_name = (
             folder_attack_name_dropdown
-            if not folder_attack_name_dropdown == "None"
+            if not folder_attack_name_dropdown == "Not Attacked"
             else None
         )
         json_dict = get_all_json_paths(
@@ -149,7 +140,12 @@ def find_folder_by_attack_name(
         if len(json_dict) == 0:
             gr.Warning("No image folder is found")
             return gr.update(choices=[])
-        attack_strengths = list(sorted(set([key[2] for key in json_dict.keys()])))
+        attack_strengths = set([key[2] for key in json_dict.keys()])
+        if None in attack_strengths:
+            attack_strengths.discard(None)
+            attack_strengths = ["N/A"] + sorted(list(attack_strengths))
+        else:
+            attack_strengths = sorted(list(attack_strengths))
         return gr.update(choices=attack_strengths, value=attack_strengths[0])
     except Exception as e:
         raise gr.Error(e)
@@ -165,23 +161,15 @@ def retrieve_folder_view(
         dataset_name = (
             folder_dataset_name_dropdown.replace("-", "").replace(" ", "").lower()
         )
-        source_name = {
-            "Real": "real",
-            "Tree-Ring": "tree_ring",
-            "Stable-Signature": "stable_sig",
-            "Stega-Stamp": "stegastamp",
-        }[folder_source_name_dropdown]
+        source_name = SOURCE_NAME_DICT_REVERSED[folder_source_name_dropdown]
         attack_name = (
             folder_attack_name_dropdown
-            if not folder_attack_name_dropdown == "None"
+            if not folder_attack_name_dropdown == "Not Attacked"
             else None
         )
         attack_strength = (
             float(folder_attack_strength_dropdown)
-            if not (
-                folder_attack_strength_dropdown is None
-                or folder_attack_strength_dropdown == "None"
-            )
+            if not folder_attack_strength_dropdown == "N/A"
             else None
         )
         json_dict = get_all_json_paths(
@@ -209,7 +197,11 @@ def retrieve_folder_view(
         # Experiment Progress
         if len(result_types_found) == 0:
             gr.Warning("No image folder is found")
-            return [0] * 4 + [[]] + ["N/A"] * 12
+            return (
+                [0] * 4
+                + [[]]
+                + ["N/A"] * (3 + len(EVALUATION_SETUPS) * len(PERFORMANCE_METRICS))
+            )
         else:
             updates = [
                 gr.update(value=(int(get_progress_from_json(paths[0]) / 5) / 10))
@@ -221,18 +213,24 @@ def retrieve_folder_view(
         # Image Examples
         if "status" not in result_types_found:
             gr.Warning("This image folder miss the status JSON")
-            return updates + [[]] + ["N/A"] * 12
+            return (
+                updates
+                + [[]]
+                + ["N/A"] * (3 + len(EVALUATION_SETUPS) * len(PERFORMANCE_METRICS))
+            )
         else:
             updates += [gr.update(value=get_example_from_json(json_paths["status"][0]))]
 
         # Evaluation Distances
         if "decode" not in result_types_found:
             gr.Warning("This image folder has not been decoded")
-            return updates + ["N/A"] * 12
+            return updates + ["N/A"] * (
+                3 + len(EVALUATION_SETUPS) * len(PERFORMANCE_METRICS)
+            )
         else:
             distance_dict = {
                 mode: get_distances_from_json(json_paths["decode"][0], mode)
-                for mode in WATERMARK_METHODS
+                for mode in WATERMARK_METHODS.keys()
             }
             updates += [
                 gr.update(
@@ -240,19 +238,21 @@ def retrieve_folder_view(
                     if distance_dict[mode] is not None
                     else "N/A"
                 )
-                for mode in WATERMARK_METHODS
+                for mode in WATERMARK_METHODS.keys()
             ]
 
         # Evaluation Performance
         if source_name == "real" or attack_name is None or attack_strength is None:
-            return updates + ["N/A"] * 9
+            return updates + ["N/A"] * (
+                len(EVALUATION_SETUPS) * len(PERFORMANCE_METRICS)
+            )
         else:
             performances = [
                 performance
-                for mode in EVALUATION_SETUPS
+                for mode in EVALUATION_SETUPS.keys()
                 for performance in get_performance(
                     dataset_name, source_name, attack_name, attack_strength, mode
-                )
+                ).values()
             ]
             updates += [
                 gr.update(value=performance if performance is not None else "N/A")
@@ -280,7 +280,7 @@ with gr.Blocks() as app:
             with gr.Row():
                 with gr.Column(scale=30):
                     progress_dataset_name_dropdown = gr.Dropdown(
-                        choices=["All", "DiffusionDB", "MS-COCO", "DALL-E 3"],
+                        choices=["All", *list(DATASET_NAMES.values())],
                         value="All",
                         label="Dataset",
                     )
@@ -288,10 +288,8 @@ with gr.Blocks() as app:
                     progress_source_name_dropdown = gr.Dropdown(
                         choices=[
                             "All",
-                            "Real",
-                            "Tree-Ring",
-                            "Stable-Signature",
-                            "Stega-Stamp",
+                            "Not Watermarked",
+                            *list(WATERMARK_METHODS.values()),
                         ],
                         value="All",
                         label="Source",
@@ -331,16 +329,14 @@ with gr.Blocks() as app:
             with gr.Row():
                 with gr.Column(scale=30):
                     folder_dataset_name_dropdown = gr.Dropdown(
-                        choices=["DiffusionDB", "MS-COCO", "DALL-E 3"],
+                        choices=DATASET_NAMES.values(),
                         label="Dataset",
                     )
                 with gr.Column(scale=30):
                     folder_source_name_dropdown = gr.Dropdown(
                         choices=[
-                            "Real",
-                            "Tree-Ring",
-                            "Stable-Signature",
-                            "Stega-Stamp",
+                            "Not Watermarked",
+                            *list(WATERMARK_METHODS.values()),
                         ],
                         label="Source",
                     )
@@ -389,39 +385,14 @@ with gr.Blocks() as app:
                         label="Stega-Stamp Bit Error Rate", interactive=False
                     )
             with gr.Accordion("Evaluation Performance"):
-                with gr.Accordion("Combined Setup"):
-                    with gr.Row():
-                        folder_eval_combined_acc_number = gr.Textbox(
-                            label="Mean Accuracy", interactive=False
-                        )
-                        folder_eval_combined_auc_number = gr.Textbox(
-                            label="AUC Score", interactive=False
-                        )
-                        folder_eval_combined_low_number = gr.Textbox(
-                            label="TPR@0.1%FPR", interactive=False
-                        )
-                with gr.Accordion("Removal Setup"):
-                    with gr.Row():
-                        folder_eval_removal_acc_number = gr.Textbox(
-                            label="Mean Accuracy", interactive=False
-                        )
-                        folder_eval_removal_auc_number = gr.Textbox(
-                            label="AUC Score", interactive=False
-                        )
-                        folder_eval_removal_low_number = gr.Textbox(
-                            label="TPR@0.1%FPR", interactive=False
-                        )
-                with gr.Accordion("Spoofing Setup"):
-                    with gr.Row():
-                        folder_eval_spoofing_acc_number = gr.Textbox(
-                            label="Mean Accuracy", interactive=False
-                        )
-                        folder_eval_spoofing_auc_number = gr.Textbox(
-                            label="AUC Score", interactive=False
-                        )
-                        folder_eval_spoofing_low_number = gr.Textbox(
-                            label="TPR@0.1%FPR", interactive=False
-                        )
+                folder_eval_performance_textbox_list = []
+                for setup in EVALUATION_SETUPS.values():
+                    with gr.Accordion(f"{setup} Setup"):
+                        with gr.Row():
+                            for metric in PERFORMANCE_METRICS.values():
+                                folder_eval_performance_textbox_list.append(
+                                    gr.Textbox(label=metric, interactive=False)
+                                )
             folder_find_button.click(
                 find_folder_by_dataset_source,
                 inputs=[
@@ -456,15 +427,7 @@ with gr.Blocks() as app:
                     folder_eval_tree_ring_distance_number,
                     folder_eval_stable_signature_distance_number,
                     folder_eval_stega_stamp_distance_number,
-                    folder_eval_combined_acc_number,
-                    folder_eval_combined_auc_number,
-                    folder_eval_combined_low_number,
-                    folder_eval_removal_acc_number,
-                    folder_eval_removal_auc_number,
-                    folder_eval_removal_low_number,
-                    folder_eval_spoofing_acc_number,
-                    folder_eval_spoofing_auc_number,
-                    folder_eval_spoofing_low_number,
+                    *folder_eval_performance_textbox_list,
                 ],
             )
 
@@ -484,7 +447,7 @@ if __name__ == "__main__":
                 result_dir,
                 branch=branch_name,
             )
-        app.launch(auth=("admin", login_password))
+        app.launch(auth=("admin", os.getenv("LOGIN_PASSWORD")))
     else:
         # If github_token is not provided, then it is on the local machine
         assert os.path.isdir(result_dir)

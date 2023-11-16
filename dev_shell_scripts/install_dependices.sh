@@ -14,7 +14,7 @@ pip install torch torchvision torchaudio --index-url https://download.pytorch.or
 pip install transformers diffusers 'datasets[vision]' ftfy
 pip install -U xformers --index-url https://download.pytorch.org/whl/cu118
 # Other machine learning libraries
-pip install onnx onnxruntime-gpu open_clip_torch torchattacks scikit-learn scikit-image pandas
+pip install onnx onnxruntime-gpu torchmetrics open_clip_torch torchattacks scikit-learn scikit-image pandas
 # Data processing libraries
 pip install pycocotools matplotlib imageio opencv-python
 # Metric libraries

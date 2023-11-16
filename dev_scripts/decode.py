@@ -256,7 +256,7 @@ def report(mode, path, results, quiet, limit):
         for idx in range(limit):
             data[str(idx)] = {
                 target_mode: results.get(idx) if mode == target_mode else None
-                for target_mode in WATERMARK_METHODS
+                for target_mode in WATERMARK_METHODS.keys()
             }
     else:
         for idx, message in results.items():
@@ -289,10 +289,10 @@ def main(path, dry, subset, quiet, limit=LIMIT, subset_limit=SUBSET_LIMIT):
     _, _, _, source_name = parse_image_dir_path(path, quiet=quiet)
     # Reverse is only required for real and tree_ring watermarked images
     if source_name == "real":
-        for mode in WATERMARK_METHODS:
+        for mode in WATERMARK_METHODS.keys():
             single_mode(mode, path, quiet, subset, limit, subset_limit)
             return
-    for mode in WATERMARK_METHODS:
+    for mode in WATERMARK_METHODS.keys():
         if source_name.endswith(mode):
             single_mode(mode, path, quiet, subset, limit, subset_limit)
             return

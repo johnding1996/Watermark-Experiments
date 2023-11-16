@@ -18,12 +18,12 @@ def get_progress_from_json(path):
     elif result_type == "reverse":
         return sum([data[str(i)] for i in range(LIMIT)])
     elif result_type == "decode":
-        for mode in WATERMARK_METHODS:
+        for mode in WATERMARK_METHODS.keys():
             if source_name.endswith(mode):
                 return sum([data[str(i)][mode] is not None for i in range(LIMIT)])
         return sum(
             [
-                (all([data[str(i)][mode] is not None for mode in WATERMARK_METHODS]))
+                (all([data[str(i)][mode] is not None for mode in WATERMARK_METHODS.keys()]))
                 for i in range(LIMIT)
             ]
         )
