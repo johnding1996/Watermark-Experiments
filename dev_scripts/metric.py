@@ -449,7 +449,8 @@ def main(path, dry, subset, quiet, limit=LIMIT, subset_limit=SUBSET_LIMIT):
                 _dataset_name == dataset_name
                 and _attack_name is None
                 and _attack_strength is None
-                and _source_name == source_name
+                and _source_name
+                == (source_name if not source_name.startswith("real") else "real")
             )
         )
         if len(clean_path_dict) != 1:
