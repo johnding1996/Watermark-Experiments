@@ -434,9 +434,7 @@ Test if a custom statistic exists
 
 
 def test_stats_exists(name, mode, model_name="inception_v3", metric="FID"):
-    stats_folder = os.path.join(
-        get_dir(), "fid_stats"
-    )
+    stats_folder = os.path.join(get_dir(), "fid_stats")
     split, res = "custom", "na"
     if model_name == "inception_v3":
         model_modifier = ""
@@ -456,9 +454,7 @@ Remove the custom FID features from the stats folder
 
 
 def remove_custom_stats(name, mode="clean", model_name="inception_v3"):
-    stats_folder = os.path.join(
-        get_dir(), "fid_stats"
-    )
+    stats_folder = os.path.join(get_dir(), "fid_stats")
     # remove the FID stats
     split, res = "custom", "na"
     if model_name == "inception_v3":
@@ -498,9 +494,7 @@ def make_custom_stats(
     device=torch.device("cuda"),
     verbose=True,
 ):
-    stats_folder = os.path.join(
-        get_dir(), "fid_stats"
-    )
+    stats_folder = os.path.join(get_dir(), "fid_stats")
     os.makedirs(stats_folder, exist_ok=True)
     split, res = "custom", "na"
     if model_name == "inception_v3":
@@ -546,14 +540,14 @@ def make_custom_stats(
 
     mu = np.mean(np_feats, axis=0)
     sigma = np.cov(np_feats, rowvar=False)
-    print(f"saving custom FID stats to {outf}")
+    # print(f"saving custom FID stats to {outf}")
     np.savez_compressed(outf, mu=mu, sigma=sigma)
 
     # KID stats
     outf = os.path.join(
         stats_folder, f"{name}_{mode}{model_modifier}_{split}_{res}_kid.npz"
     )
-    print(f"saving custom KID stats to {outf}")
+    # print(f"saving custom KID stats to {outf}")
     np.savez_compressed(outf, feats=np_feats)
 
 

@@ -26,25 +26,27 @@ def convert_image_pair_to_numpy(image1, image2):
 # Compute MSE between two images
 def compute_mse(image1, image2):
     image1_np, image2_np = convert_image_pair_to_numpy(image1, image2)
-    return mean_squared_error(image1_np, image2_np)
+    return float(mean_squared_error(image1_np, image2_np))
 
 
 # Compute PSNR between two images
 def compute_psnr(image1, image2):
     image1_np, image2_np = convert_image_pair_to_numpy(image1, image2)
-    return peak_signal_noise_ratio(image1_np, image2_np)
+    return float(peak_signal_noise_ratio(image1_np, image2_np))
 
 
 # Compute SSIM between two images
 def compute_ssim(image1, image2):
     image1_np, image2_np = convert_image_pair_to_numpy(image1, image2)
-    return structural_similarity_index_measure(image1_np, image2_np, channel_axis=2)
+    return float(
+        structural_similarity_index_measure(image1_np, image2_np, channel_axis=2)
+    )
 
 
 # Compute NMI between two images
 def compute_nmi(image1, image2):
     image1_np, image2_np = convert_image_pair_to_numpy(image1, image2)
-    return normalized_mutual_information(image1_np, image2_np)
+    return float(normalized_mutual_information(image1_np, image2_np))
 
 
 # Compute metrics

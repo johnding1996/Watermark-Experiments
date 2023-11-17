@@ -61,7 +61,9 @@ def call_script(script_name, all, dry, args):
         paths = list(
             get_all_image_dir_paths(
                 lambda _dataset_name, _attack_name, _attack_strength, _source_name: (
-                    _dataset_name in ["diffusiondb", "mscoco"]
+                    # TODO: Remove this filter later
+                    _dataset_name
+                    in ["diffusiondb", "mscoco"]
                 )
             ).values()
         )
