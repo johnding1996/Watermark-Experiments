@@ -14,7 +14,7 @@ scikit-image>=0.0
 transformers>=4.35.0
 onnx>=1.15.0
 onnxruntime-gpu>=1.16.2
-torchmetrics>=1.2.0
+clip @ git+https://github.com/openai/CLIP.git@a1d071733d7111c9c014f024669f959182114e33
 orjson>=3.9.10
 huggingface-hub>=0.17.3
 tqdm>=4.66.1
