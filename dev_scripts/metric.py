@@ -134,7 +134,10 @@ def process_single(mode, indices, path, clean_path, attacked_path, quiet, limit)
             num_workers=8,
             verbose=not quiet,
         )
-        return {idx: metric for idx, metric in zip(indices, metrics)}
+        results = {idx: metric for idx, metric in zip(indices, metrics)}
+        [image.close() for image in clean_images]
+        [image.close() for image in attacked_images]
+        return results
 
     elif mode in ["lpips", "watson"]:
         if not quiet:
@@ -169,7 +172,10 @@ def process_single(mode, indices, path, clean_path, attacked_path, quiet, limit)
             )
             pbar.update(min(batch_size, len(indices) - it))
         pbar.close()
-        return {idx: metric for idx, metric in zip(indices, metrics)}
+        results = {idx: metric for idx, metric in zip(indices, metrics)}
+        [image.close() for image in clean_images]
+        [image.close() for image in attacked_images]
+        return results
 
     elif mode == "aesthetics_and_artifacts":
         if not quiet:
@@ -191,7 +197,9 @@ def process_single(mode, indices, path, clean_path, attacked_path, quiet, limit)
             metrics.extend(list(zip(aesthetics, artifacts)))
             pbar.update(min(batch_size, len(indices) - it))
         pbar.close()
-        return {idx: metric for idx, metric in zip(indices, metrics)}
+        results = {idx: metric for idx, metric in zip(indices, metrics)}
+        [image.close() for image in images]
+        return results
 
     elif mode == "clip_score":
         if not quiet:
@@ -227,7 +235,9 @@ def process_single(mode, indices, path, clean_path, attacked_path, quiet, limit)
             )
             pbar.update(min(batch_size, len(indices) - it))
         pbar.close()
-        return {idx: metric for idx, metric in zip(indices, metrics)}
+        results = {idx: metric for idx, metric in zip(indices, metrics)}
+        [image.close() for image in images]
+        return results
 
 
 def init_model(mode, gpu):
