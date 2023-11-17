@@ -97,3 +97,14 @@ def compute_ssim_repeated(images1, images2, num_workers=None, verbose=False):
 # Compute NMI between pairs of images
 def compute_nmi_repeated(images1, images2, num_workers=None, verbose=False):
     return compute_metric_repeated(images1, images2, compute_nmi, num_workers, verbose)
+
+
+def compute_image_distance_repeated(
+    images1, images2, metric_name, num_workers=None, verbose=False
+):
+    metric_func = {
+        "psnr": compute_psnr,
+        "ssim": compute_ssim,
+        "nmi": compute_nmi,
+    }[metric_name]
+    return compute_metric_repeated(images1, images2, metric_func, num_workers, verbose)

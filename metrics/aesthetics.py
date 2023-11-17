@@ -19,14 +19,12 @@ def load_aesthetics_and_artifacts_models(device=torch.device("cuda")):
     return vision_model, clip_processor, rating_model, artifacts_model
 
 
-def compute_aesthetics_and_artifacts_scores(image, models):
-    assert isinstance(image, Image.Image)
-    assert isinstance(models, tuple) and len(models) == 4
+def compute_aesthetics_and_artifacts_scores(
+    images, models, device=torch.device("cuda")
+):
     vision_model, clip_processor, rating_model, artifacts_model = models
 
-    inputs = clip_processor(images=image, return_tensors="pt").to(
-        next(vision_model.parameters()).device
-    )
+    inputs = clip_processor(images=images, return_tensors="pt").to(device)
     with torch.no_grad():
         vision_output = vision_model(**inputs)
     pooled_output = vision_output.pooler_output
@@ -34,4 +32,7 @@ def compute_aesthetics_and_artifacts_scores(image, models):
     with torch.no_grad():
         rating = rating_model(embedding)
         artifact = artifacts_model(embedding)
-    return rating.detach().cpu().item(), artifact.detach().cpu().item()
+    return (
+        rating.detach().cpu().numpy().flatten().tolist(),
+        artifact.detach().cpu().numpy().flatten().tolist(),
+    )

@@ -8,12 +8,15 @@ from .image import (
     compute_psnr_repeated,
     compute_ssim_repeated,
     compute_nmi_repeated,
+    compute_image_distance_repeated,
 )
 from .perceptual import (
+    load_perceptual_models,
     compute_lpips,
     compute_watson,
     compute_lpips_repeated,
     compute_watson_repeated,
+    compute_perceptual_metric_repeated,
 )
 from .aesthetics import (
     load_aesthetics_and_artifacts_models,

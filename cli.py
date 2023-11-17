@@ -20,7 +20,7 @@ def cli():
 @click.command()
 def version():
     """Check the version of the CLI."""
-    click.echo("0.1.7")
+    click.echo("0.1.9")
 
 
 # Worker function to run a command on a single image directory
@@ -58,7 +58,13 @@ def call_script(script_name, all, dry, args):
             raise ValueError(
                 "Cannot use --path or -p when running on all image directories"
             )
-        paths = list(path for key, path in get_all_image_dir_paths().items())
+        paths = list(
+            get_all_image_dir_paths(
+                lambda _dataset_name, _attack_name, _attack_strength, _source_name: (
+                    _dataset_name in ["diffusiondb", "mscoco"]
+                )
+            ).values()
+        )
         random.shuffle(paths)
         print(
             f"Running command 'wmbench {script_name}' on {len(paths)} image directories found"

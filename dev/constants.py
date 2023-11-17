@@ -28,6 +28,7 @@ QUALITY_METRICS = {
     "ssim": "SSIM",
     "nmi": "Normed Mutual-Info",
     "lpips": "LPIPS",
+    "watson": "Watson-DFT",
     "aesthetics": "Delta Aesthetics",
     "artifacts": "Delta Artifacts",
     "clip_score": "Delta CLIP-Score",
