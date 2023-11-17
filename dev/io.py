@@ -1,4 +1,5 @@
 import os
+import warnings
 import stat
 import orjson
 import gzip
@@ -30,13 +31,17 @@ def compare_dicts(dict1, dict2):
 
 
 def load_json(filepath):
-    with open(filepath, "rb") as json_file:
-        return orjson.loads(json_file.read())
+    try:
+        with open(filepath, "rb") as json_file:
+            return orjson.loads(json_file.read())
+    except orjson.JSONDecodeError:
+        warnings.warn(f"Found invalid JSON file {filepath}, deleting")
+        os.remove(filepath)
+        return None
 
 
 def save_json(data, filepath):
-    if os.path.exists(filepath):
-        existing_data = load_json(filepath)
+    if os.path.exists(filepath) and (existing_data := load_json(filepath)) is not None:
         if compare_dicts(data, existing_data):
             return
     with open(filepath, "wb") as json_file:

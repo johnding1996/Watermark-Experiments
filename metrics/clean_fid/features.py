@@ -5,7 +5,7 @@ import os
 import platform
 import numpy as np
 import torch
-import inspect
+from torch.hub import get_dir
 from .downloads_helper import check_download_url
 from .inception_pytorch import InceptionV3
 from .inception_torchscript import InceptionV3W
@@ -101,19 +101,17 @@ def get_reference_statistics(
     else:
         model_modifier = "_" + model_name
     if metric == "FID":
-        rel_path = (f"{name}_{mode}{model_modifier}_{split}_{res}.npz").lower()
+        rel_path = (f"{name}_{mode}{model_modifier}_{split}_{res}.npz")
         url = f"{base_url}/{rel_path}"
-        mod_path = os.path.dirname(inspect.getmodule(inspect.currentframe()).__file__)
-        stats_folder = os.path.join(mod_path, "stats")
+        stats_folder = os.path.join(get_dir(), "fid_stats")
         fpath = check_download_url(local_folder=stats_folder, url=url)
         stats = np.load(fpath)
         mu, sigma = stats["mu"], stats["sigma"]
         return mu, sigma
     elif metric == "KID":
-        rel_path = (f"{name}_{mode}{model_modifier}_{split}_{res}_kid.npz").lower()
+        rel_path = (f"{name}_{mode}{model_modifier}_{split}_{res}_kid.npz")
         url = f"{base_url}/{rel_path}"
-        mod_path = os.path.dirname(inspect.getmodule(inspect.currentframe()).__file__)
-        stats_folder = os.path.join(mod_path, "stats")
+        stats_folder = os.path.join(get_dir(), "fid_stats")
         fpath = check_download_url(local_folder=stats_folder, url=url)
         stats = np.load(fpath)
         return stats["feats"]

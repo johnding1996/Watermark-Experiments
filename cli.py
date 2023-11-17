@@ -6,7 +6,7 @@ import subprocess
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from tqdm.auto import tqdm
 import dotenv
-from space import get_all_image_dir_paths
+from dev import get_all_image_dir_paths
 
 dotenv.load_dotenv(override=False)
 
@@ -20,7 +20,7 @@ def cli():
 @click.command()
 def version():
     """Check the version of the CLI."""
-    click.echo("0.1.7")
+    click.echo("0.1.9")
 
 
 # Worker function to run a command on a single image directory
@@ -58,7 +58,15 @@ def call_script(script_name, all, dry, args):
             raise ValueError(
                 "Cannot use --path or -p when running on all image directories"
             )
-        paths = list(path for key, path in get_all_image_dir_paths().items())
+        paths = list(
+            get_all_image_dir_paths(
+                lambda _dataset_name, _attack_name, _attack_strength, _source_name: (
+                    # TODO: Remove this filter later
+                    _dataset_name
+                    in ["diffusiondb", "mscoco"]
+                )
+            ).values()
+        )
         random.shuffle(paths)
         print(
             f"Running command 'wmbench {script_name}' on {len(paths)} image directories found"
@@ -131,6 +139,20 @@ def decode(all, args):
     call_script("decode", all, False, args)
 
 
+@click.command(
+    context_settings=dict(
+        ignore_unknown_options=True,
+    )
+)
+@click.option(
+    "--all", "-a", is_flag=True, default=False, help="Run on all image directories"
+)
+@click.argument("args", nargs=-1)
+def metric(all, args):
+    """Measure image quality metrics (support --all)."""
+    call_script("metric", all, False, args)
+
+
 @click.command()
 def chmod():
     """Grant group write access to all your files."""
@@ -150,7 +172,7 @@ def space():
     subprocess.run(
         [
             sys.executable,
-            os.path.join(os.path.dirname(os.path.abspath(__file__)), "space/app.py"),
+            os.path.join(os.path.dirname(os.path.abspath(__file__)), "app.py"),
         ]
     )
 
@@ -175,6 +197,7 @@ cli.add_command(version)
 cli.add_command(status)
 cli.add_command(reverse)
 cli.add_command(decode)
+cli.add_command(metric)
 # Utility commands
 cli.add_command(chmod)
 # Debug commands

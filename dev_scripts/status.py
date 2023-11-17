@@ -1,7 +1,8 @@
 import click
 import os
 from PIL import Image, ImageDraw
-from space import (
+from dev import (
+    LIMIT,
     check_file_existence,
     parse_image_dir_path,
     encode_image_to_string,
@@ -43,7 +44,7 @@ def get_image_dir_thumbnails(path, sampled, limit=5000):
 )
 @click.option("--dry", "-d", is_flag=True, default=False, help="Dry run")
 @click.option("--quiet", "-q", is_flag=True, default=False, help="Quiet mode")
-def main(path, dry, quiet, limit=5000):
+def main(path, dry, quiet, limit=LIMIT):
     dataset_name, _, _, _ = parse_image_dir_path(path, quiet=quiet)
     existences = check_file_existence(path, name_pattern="{}.png", limit=limit)
     if not quiet:
