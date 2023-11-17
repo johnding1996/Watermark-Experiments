@@ -36,6 +36,17 @@ from .eval import (
     bit_error_rate,
     complex_l1,
     message_distance,
+    detection_perforamance,
+    mean_and_std,
+    combine_means_and_stds,
 )
-from .aggregate import get_performance_from_jsons, get_performance, get_quality_metrics
-from .plot import style_progress_dataframe
+from .aggregate import (
+    get_performance_from_jsons,
+    get_performance,
+    get_single_quality_from_jsons,
+    get_quality_from_jsons,
+    get_quality,
+)
+from .plot import (
+    style_progress_dataframe,
+)

@@ -1,3 +1,4 @@
+import math
 import pandas as pd
 
 
@@ -42,7 +43,7 @@ def style_progress_dataframe(row_list):
             return [""] * len(row)
 
     def style_rows_by_reverse(row):
-        if row["Source"].endswith("tree_ring") and (
+        if (row["Source"] == "real" or row["Source"].endswith("tree_ring")) and (
             pd.isna(row["Reversed"]) or row["Reversed"] < 5000
         ):
             return (

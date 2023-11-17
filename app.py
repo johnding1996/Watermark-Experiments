@@ -200,13 +200,16 @@ def retrieve_folder_view(
             return (
                 [0] * 4
                 + [[]]
-                + ["N/A"] * (3 + len(EVALUATION_SETUPS) * len(PERFORMANCE_METRICS))
+                + ["N/A"]
+                * (
+                    3
+                    + len(EVALUATION_SETUPS) * len(PERFORMANCE_METRICS)
+                    + len(QUALITY_METRICS)
+                )
             )
         else:
             updates = [
-                gr.update(value=(int(get_progress_from_json(paths[0]) / 5) / 10))
-                if paths
-                else gr.update(value=0)
+                (int(get_progress_from_json(paths[0]) / 5) / 10) if paths else 0
                 for paths in json_paths.values()
             ]
 
@@ -216,16 +219,23 @@ def retrieve_folder_view(
             return (
                 updates
                 + [[]]
-                + ["N/A"] * (3 + len(EVALUATION_SETUPS) * len(PERFORMANCE_METRICS))
+                + ["N/A"]
+                * (
+                    3
+                    + len(EVALUATION_SETUPS) * len(PERFORMANCE_METRICS)
+                    + len(QUALITY_METRICS)
+                )
             )
         else:
-            updates += [gr.update(value=get_example_from_json(json_paths["status"][0]))]
+            updates += [get_example_from_json(json_paths["status"][0])]
 
         # Evaluation Distances
         if "decode" not in result_types_found:
             gr.Warning("This image folder has not been decoded")
             return updates + ["N/A"] * (
-                3 + len(EVALUATION_SETUPS) * len(PERFORMANCE_METRICS)
+                3
+                + len(EVALUATION_SETUPS) * len(PERFORMANCE_METRICS)
+                + len(QUALITY_METRICS)
             )
         else:
             distance_dict = {
@@ -233,19 +243,15 @@ def retrieve_folder_view(
                 for mode in WATERMARK_METHODS.keys()
             }
             updates += [
-                gr.update(
-                    value=np.mean(distance_dict[mode])
-                    if distance_dict[mode] is not None
-                    else "N/A"
-                )
+                f"{np.mean(distance_dict[mode]):.4e}"
+                if distance_dict[mode] is not None
+                else "N/A"
                 for mode in WATERMARK_METHODS.keys()
             ]
 
         # Evaluation Performance
         if source_name == "real" or attack_name is None or attack_strength is None:
-            return updates + ["N/A"] * (
-                len(EVALUATION_SETUPS) * len(PERFORMANCE_METRICS)
-            )
+            updates += ["N/A"] * (len(EVALUATION_SETUPS) * len(PERFORMANCE_METRICS))
         else:
             performances = [
                 performance
@@ -255,13 +261,23 @@ def retrieve_folder_view(
                 ).values()
             ]
             updates += [
-                gr.update(value=performance if performance is not None else "N/A")
+                f"{performance:.4f}" if performance is not None else "N/A"
                 for performance in performances
             ]
-            return updates
         # Quality Metrics
         if attack_name is None or attack_strength is None:
-            pass
+            return updates + ["N/A"] * len(QUALITY_METRICS)
+        else:
+            quality_dict = get_quality(
+                dataset_name, source_name, attack_name, attack_strength, None
+            )
+            updates += [
+                f"{quality_dict[mode][0]:.4e} ± {quality_dict[mode][1]:.4e}"
+                if quality_dict[mode] is not None
+                else "N/A"
+                for mode in QUALITY_METRICS.keys()
+            ]
+            return updates
 
     except Exception as e:
         raise gr.Error(e)
@@ -393,6 +409,16 @@ with gr.Blocks() as app:
                                 folder_eval_performance_textbox_list.append(
                                     gr.Textbox(label=metric, interactive=False)
                                 )
+            with gr.Accordion("Quality Metrics"):
+                folder_metric_textbox_list = []
+                for i in range(0, len(QUALITY_METRICS), 4):
+                    with gr.Row():
+                        for metric in list(QUALITY_METRICS.values())[
+                            i : min(i + 4, len(QUALITY_METRICS))
+                        ]:
+                            folder_metric_textbox_list.append(
+                                gr.Textbox(label=metric, interactive=False)
+                            )
             folder_find_button.click(
                 find_folder_by_dataset_source,
                 inputs=[
@@ -428,6 +454,7 @@ with gr.Blocks() as app:
                     folder_eval_stable_signature_distance_number,
                     folder_eval_stega_stamp_distance_number,
                     *folder_eval_performance_textbox_list,
+                    *folder_metric_textbox_list,
                 ],
             )
 
