@@ -20,7 +20,7 @@ def cli():
 @click.command()
 def version():
     """Check the version of the CLI."""
-    click.echo("0.2.0")
+    click.echo("0.2.1")
 
 
 # Worker function to run a command on a single image directory
