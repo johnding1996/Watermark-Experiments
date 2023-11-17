@@ -76,8 +76,11 @@ def get_distances_from_json(path, mode):
 
 
 def get_metrics_from_json(path, mode):
-    data = load_json(path)
-    metrics = [data[str(i)][mode] for i in range(SUBSET_LIMIT)]
-    if len(metrics) < SUBSET_LIMIT or any([metric is None for metric in metrics]):
+    try:
+        data = load_json(path)
+        metrics = [data[str(i)][mode] for i in range(SUBSET_LIMIT)]
+        if len(metrics) < SUBSET_LIMIT or any([metric is None for metric in metrics]):
+            return None
+        return metrics
+    except KeyError:
         return None
-    return metrics

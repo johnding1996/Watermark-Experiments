@@ -30,7 +30,18 @@ def reload_results():
             # If github_token is not provided, then it is on the local machine
             repo = Repo(result_dir)
             repo.git.pull()
-        return f"Reload results successful, {len(get_all_json_paths())} JSONs found, last updated at {repo.head.commit.committed_datetime.strftime('%b %d, %H:%M:%S')}"
+        gr.Info(f"Reload results successfully, {len(get_all_json_paths())} JSONs found")
+        gr.Info(
+            f"Results last updated at {repo.head.commit.committed_datetime.strftime('%b %d, %H:%M:%S')}"
+        )
+    except Exception as e:
+        raise gr.Error(e)
+
+
+def clear_cache():
+    try:
+        clear_aggregated_cache()
+        gr.Info("Aggregated cache successfully cleared")
     except Exception as e:
         raise gr.Error(e)
 
@@ -46,7 +57,7 @@ def show_experiment_progress(
 ):
     try:
         dataset_name = (
-            (progress_dataset_name_dropdown.replace("-", "").replace(" ", "").lower())
+            {v: k for k, v in DATASET_NAMES.items()}[progress_dataset_name_dropdown]
             if progress_dataset_name_dropdown != "All"
             else None
         )
@@ -70,10 +81,96 @@ def show_experiment_progress(
                 ["status", "reverse", "decode", "metric"].index(key[4])
             ] = get_progress_from_json(json_path)
 
-        return gr.update(
-            value=style_progress_dataframe(
-                [[*key, *progress_dict[key]] for key in progress_dict.keys()]
-            ),
+        return style_progress_dataframe(
+            [[*key, *progress_dict[key]] for key in progress_dict.keys()]
+        )
+    except Exception as e:
+        raise gr.Error(e)
+
+
+####################################################################################################
+# Tab: Attack Comparison
+
+
+def aggregate_result_dataframe(
+    compare_dataset_name_dropdown,
+    compare_source_name_dropdown,
+    compare_eval_setup_dropdown,
+    progress=gr.Progress(),
+):
+    try:
+        dataset_name = {v: k for k, v in DATASET_NAMES.items()}[
+            compare_dataset_name_dropdown
+        ]
+        source_name = {v: k for k, v in WATERMARK_METHODS.items()}[
+            compare_source_name_dropdown
+        ]
+        mode = {v: k for k, v in EVALUATION_SETUPS.items()}[compare_eval_setup_dropdown]
+        json_dict = get_all_json_paths(
+            lambda _dataset_name, _attack_name, _attack_strength, _source_name, _result_type: (
+                (_dataset_name == dataset_name if dataset_name else True)
+                and (_source_name.startswith(source_name) if source_name else True)
+                and _attack_name is not None
+                and _attack_strength is not None
+            )
+        )
+
+        attack_names_and_strengths = sorted(
+            list(set([(key[1], key[2]) for key in json_dict.keys()]))
+        )
+        comparison_row_list = []
+        for attack_name, attack_strength in progress.tqdm(attack_names_and_strengths):
+            performance_dict = get_performance(
+                dataset_name, source_name, attack_name, attack_strength, mode
+            )
+            quality_dict = get_quality(
+                dataset_name, source_name, attack_name, attack_strength, mode
+            )
+            comparison_row_list.append(
+                [
+                    attack_name,
+                    attack_strength,
+                    *[performance_dict[k] for k in PERFORMANCE_METRICS.keys()],
+                    *[
+                        quality_dict[k][0] if quality_dict[k] is not None else None
+                        for k in QUALITY_METRICS.keys()
+                    ],
+                ]
+            )
+
+        compare_result_dataframe = aggregate_comparison_dataframe(comparison_row_list)
+        fig_performance, fig_quality = plot_parallel_coordinates(
+            compare_result_dataframe
+        )
+
+        return [compare_result_dataframe, fig_performance, fig_quality]
+
+    except Exception as e:
+        raise gr.Error(e)
+
+
+def draw_2d_plot(
+    compare_result_dataframe,
+    compare_performance_mode_dropdown,
+    compare_quality_mode_dropdown,
+    compare_show_strength_checkbox,
+    compare_line_width_slider,
+    compare_marker_size_slider,
+    compare_tick_size_slider,
+    compare_legend_fontsize_slider,
+    compare_plot_height_slider,
+):
+    try:
+        return plot_2d_comparison(
+            compare_result_dataframe,
+            compare_performance_mode_dropdown,
+            compare_quality_mode_dropdown,
+            compare_show_strength_checkbox,
+            compare_line_width_slider,
+            compare_marker_size_slider,
+            compare_tick_size_slider,
+            compare_legend_fontsize_slider,
+            compare_plot_height_slider,
         )
     except Exception as e:
         raise gr.Error(e)
@@ -91,9 +188,9 @@ def find_folder_by_dataset_source(
         gr.Info("Please select dataset and source first")
         return gr.update(choices=[])
     try:
-        dataset_name = (
-            folder_dataset_name_dropdown.replace("-", "").replace(" ", "").lower()
-        )
+        dataset_name = {v: k for k, v in DATASET_NAMES.items()}[
+            folder_dataset_name_dropdown
+        ]
         source_name = SOURCE_NAME_DICT_REVERSED[folder_source_name_dropdown]
         json_dict = get_all_json_paths(
             lambda _dataset_name, _attack_name, _attack_strength, _source_name, _result_type: (
@@ -121,9 +218,9 @@ def find_folder_by_attack_name(
     if not folder_attack_name_dropdown:
         return gr.update(choices=["None"], value="None")
     try:
-        dataset_name = (
-            folder_dataset_name_dropdown.replace("-", "").replace(" ", "").lower()
-        )
+        dataset_name = {v: k for k, v in DATASET_NAMES.items()}[
+            folder_dataset_name_dropdown
+        ]
         source_name = SOURCE_NAME_DICT_REVERSED[folder_source_name_dropdown]
         attack_name = (
             folder_attack_name_dropdown
@@ -158,9 +255,9 @@ def retrieve_folder_view(
     folder_attack_strength_dropdown,
 ):
     try:
-        dataset_name = (
-            folder_dataset_name_dropdown.replace("-", "").replace(" ", "").lower()
-        )
+        dataset_name = {v: k for k, v in DATASET_NAMES.items()}[
+            folder_dataset_name_dropdown
+        ]
         source_name = SOURCE_NAME_DICT_REVERSED[folder_source_name_dropdown]
         attack_name = (
             folder_attack_name_dropdown
@@ -289,8 +386,11 @@ def retrieve_folder_view(
 with gr.Blocks() as app:
     with gr.Row():
         reload_button = gr.Button("Reload Results")
-        reload_status_textbox = gr.Textbox(label="Result Status", placeholder="")
-        reload_button.click(reload_results, inputs=None, outputs=reload_status_textbox)
+        clear_cache_button = gr.Button("Clear Cache")
+
+        reload_button.click(reload_results, inputs=None, outputs=None)
+        clear_cache_button.click(clear_cache, inputs=None, outputs=None)
+
     with gr.Tabs():
         with gr.Tab("Experiment Progress"):
             with gr.Row():
@@ -341,11 +441,273 @@ with gr.Blocks() as app:
                 inputs=[progress_dataset_name_dropdown, progress_source_name_dropdown],
                 outputs=progress_dataframe,
             )
+
+        with gr.Tab("Attack Comparison"):
+            with gr.Row():
+                with gr.Column(scale=20):
+                    compare_dataset_name_dropdown = gr.Dropdown(
+                        choices=list(DATASET_NAMES.values()),
+                        value=list(DATASET_NAMES.values())[0],
+                        label="Dataset",
+                    )
+                with gr.Column(scale=20):
+                    compare_source_name_dropdown = gr.Dropdown(
+                        choices=list(WATERMARK_METHODS.values()),
+                        value=list(WATERMARK_METHODS.values())[0],
+                        label="Source",
+                    )
+                with gr.Column(scale=20):
+                    compare_eval_setup_dropdown = gr.Dropdown(
+                        choices=list(EVALUATION_SETUPS.values()),
+                        value="Removal",
+                        label="Evaluation Setup",
+                    )
+                compare_draw_button = gr.Button("Draw")
+
+            with gr.Accordion("Result Table"):
+                compare_result_dataframe = gr.DataFrame(
+                    headers=[
+                        "Attack",
+                        "Strength",
+                        *list(PERFORMANCE_METRICS.values()),
+                        *list(QUALITY_METRICS.values()),
+                    ],
+                    datatype=["str", "number"]
+                    + ["number"] * (len(PERFORMANCE_METRICS) + len(QUALITY_METRICS)),
+                    col_count=(
+                        2 + len(PERFORMANCE_METRICS) + len(QUALITY_METRICS),
+                        "fixed",
+                    ),
+                    type="pandas",
+                    interactive=False,
+                    visible=True,
+                )
+
+            with gr.Accordion("Parallel Coordinates"):
+                compare_performance_parallel_coordinates = gr.Plot(
+                    label="Correlation of Performances", show_label=False
+                )
+                compare_quality_parallel_coordinates = gr.Plot(
+                    label="Correlation of Qualities", show_label=False
+                )
+
+            with gr.Row(equal_height=True):
+                with gr.Column(40):
+                    compare_performance_mode_dropdown = gr.Dropdown(
+                        choices=list(PERFORMANCE_METRICS.values()),
+                        value=list(PERFORMANCE_METRICS.values())[3],
+                        label="Performance Metric",
+                    )
+                with gr.Column(20):
+                    compare_quality_mode_dropdown = gr.Dropdown(
+                        choices=list(QUALITY_METRICS.values()),
+                        value=list(QUALITY_METRICS.values())[0],
+                        label="Quality Metric",
+                    )
+
+            with gr.Accordion("Plot Adjustments"):
+                compare_show_strength_checkbox = gr.Checkbox(
+                    value=False, label="Show Strength", scale=5
+                )
+                compare_line_width_slider = gr.Slider(
+                    minimum=1, maximum=15, value=3, label="Line Width"
+                )
+                compare_marker_size_slider = gr.Slider(
+                    minimum=1, maximum=30, value=9, label="Marker Size"
+                )
+                compare_tick_size_slider = gr.Slider(
+                    minimum=1, maximum=30, value=10, label="Tick Size"
+                )
+                compare_legend_fontsize_slider = gr.Slider(
+                    minimum=1, maximum=40, value=15, label="Legend Font Size"
+                )
+                compare_plot_height_slider = gr.Slider(
+                    minimum=300, maximum=1500, value=800, label="Plot Height"
+                )
+
+            with gr.Accordion("2D Plots"):
+                compare_2d_plot = gr.Plot(
+                    label="Comparison of Attacks",
+                    show_label=False,
+                )
+
+            compare_draw_button.click(
+                aggregate_result_dataframe,
+                inputs=[
+                    compare_dataset_name_dropdown,
+                    compare_source_name_dropdown,
+                    compare_eval_setup_dropdown,
+                ],
+                outputs=[
+                    compare_result_dataframe,
+                    compare_performance_parallel_coordinates,
+                    compare_quality_parallel_coordinates,
+                ],
+            )
+
+            compare_result_dataframe.change(
+                draw_2d_plot,
+                inputs=[
+                    compare_result_dataframe,
+                    compare_performance_mode_dropdown,
+                    compare_quality_mode_dropdown,
+                    compare_show_strength_checkbox,
+                    compare_line_width_slider,
+                    compare_marker_size_slider,
+                    compare_tick_size_slider,
+                    compare_legend_fontsize_slider,
+                    compare_plot_height_slider,
+                ],
+                outputs=[
+                    compare_2d_plot,
+                ],
+            )
+
+            compare_performance_mode_dropdown.change(
+                draw_2d_plot,
+                inputs=[
+                    compare_result_dataframe,
+                    compare_performance_mode_dropdown,
+                    compare_quality_mode_dropdown,
+                    compare_show_strength_checkbox,
+                    compare_line_width_slider,
+                    compare_marker_size_slider,
+                    compare_tick_size_slider,
+                    compare_legend_fontsize_slider,
+                    compare_plot_height_slider,
+                ],
+                outputs=[
+                    compare_2d_plot,
+                ],
+            )
+
+            compare_quality_mode_dropdown.change(
+                draw_2d_plot,
+                inputs=[
+                    compare_result_dataframe,
+                    compare_performance_mode_dropdown,
+                    compare_quality_mode_dropdown,
+                    compare_show_strength_checkbox,
+                    compare_line_width_slider,
+                    compare_marker_size_slider,
+                    compare_tick_size_slider,
+                    compare_legend_fontsize_slider,
+                    compare_plot_height_slider,
+                ],
+                outputs=[
+                    compare_2d_plot,
+                ],
+            )
+
+            compare_show_strength_checkbox.change(
+                draw_2d_plot,
+                inputs=[
+                    compare_result_dataframe,
+                    compare_performance_mode_dropdown,
+                    compare_quality_mode_dropdown,
+                    compare_show_strength_checkbox,
+                    compare_line_width_slider,
+                    compare_marker_size_slider,
+                    compare_tick_size_slider,
+                    compare_legend_fontsize_slider,
+                    compare_plot_height_slider,
+                ],
+                outputs=[
+                    compare_2d_plot,
+                ],
+            )
+            compare_line_width_slider.change(
+                draw_2d_plot,
+                inputs=[
+                    compare_result_dataframe,
+                    compare_performance_mode_dropdown,
+                    compare_quality_mode_dropdown,
+                    compare_show_strength_checkbox,
+                    compare_line_width_slider,
+                    compare_marker_size_slider,
+                    compare_tick_size_slider,
+                    compare_legend_fontsize_slider,
+                    compare_plot_height_slider,
+                ],
+                outputs=[
+                    compare_2d_plot,
+                ],
+            )
+            compare_marker_size_slider.change(
+                draw_2d_plot,
+                inputs=[
+                    compare_result_dataframe,
+                    compare_performance_mode_dropdown,
+                    compare_quality_mode_dropdown,
+                    compare_show_strength_checkbox,
+                    compare_line_width_slider,
+                    compare_marker_size_slider,
+                    compare_tick_size_slider,
+                    compare_legend_fontsize_slider,
+                    compare_plot_height_slider,
+                ],
+                outputs=[
+                    compare_2d_plot,
+                ],
+            )
+            compare_tick_size_slider.change(
+                draw_2d_plot,
+                inputs=[
+                    compare_result_dataframe,
+                    compare_performance_mode_dropdown,
+                    compare_quality_mode_dropdown,
+                    compare_show_strength_checkbox,
+                    compare_line_width_slider,
+                    compare_marker_size_slider,
+                    compare_tick_size_slider,
+                    compare_legend_fontsize_slider,
+                    compare_plot_height_slider,
+                ],
+                outputs=[
+                    compare_2d_plot,
+                ],
+            )
+            compare_legend_fontsize_slider.change(
+                draw_2d_plot,
+                inputs=[
+                    compare_result_dataframe,
+                    compare_performance_mode_dropdown,
+                    compare_quality_mode_dropdown,
+                    compare_show_strength_checkbox,
+                    compare_line_width_slider,
+                    compare_marker_size_slider,
+                    compare_tick_size_slider,
+                    compare_legend_fontsize_slider,
+                    compare_plot_height_slider,
+                ],
+                outputs=[
+                    compare_2d_plot,
+                ],
+            )
+            compare_plot_height_slider.change(
+                draw_2d_plot,
+                inputs=[
+                    compare_result_dataframe,
+                    compare_performance_mode_dropdown,
+                    compare_quality_mode_dropdown,
+                    compare_show_strength_checkbox,
+                    compare_line_width_slider,
+                    compare_marker_size_slider,
+                    compare_tick_size_slider,
+                    compare_legend_fontsize_slider,
+                    compare_plot_height_slider,
+                ],
+                outputs=[
+                    compare_2d_plot,
+                ],
+            )
+
         with gr.Tab("Image Folder Viewer"):
             with gr.Row():
                 with gr.Column(scale=30):
                     folder_dataset_name_dropdown = gr.Dropdown(
-                        choices=DATASET_NAMES.values(),
+                        choices=list(DATASET_NAMES.values()),
+                        value=list(DATASET_NAMES.values())[0],
                         label="Dataset",
                     )
                 with gr.Column(scale=30):
@@ -354,6 +716,7 @@ with gr.Blocks() as app:
                             "Not Watermarked",
                             *list(WATERMARK_METHODS.values()),
                         ],
+                        value="Not Watermarked",
                         label="Source",
                     )
                 folder_find_button = gr.Button("Find")

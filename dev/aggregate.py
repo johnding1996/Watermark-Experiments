@@ -1,7 +1,12 @@
+import os
+from joblib import Memory
 from .constants import EVALUATION_SETUPS, PERFORMANCE_METRICS, QUALITY_METRICS
 from .find import get_all_json_paths
 from .parse import get_distances_from_json, get_metrics_from_json
 from .eval import detection_perforamance, mean_and_std, combine_means_and_stds
+
+
+memory = Memory(os.environ.get("CACHE_DIR"), verbose=0)
 
 
 def get_performance_from_jsons(original_path, watermarked_path, mode):
@@ -12,6 +17,7 @@ def get_performance_from_jsons(original_path, watermarked_path, mode):
     return detection_perforamance(original_distances, watermarked_distances)
 
 
+@memory.cache
 def get_performance(dataset_name, source_name, attack_name, attack_strength, mode):
     if source_name.startswith("real") or attack_name is None or attack_strength is None:
         raise ValueError(
@@ -109,13 +115,13 @@ def get_single_quality_from_jsons(clean_path, attacked_path, mode):
     if mode not in ["aesthetics", "artifacts", "clip_score"]:
         attacked_metrics = get_metrics_from_json(attacked_path, mode)
         if attacked_metrics is None:
-            return {key: None for key in QUALITY_METRICS.keys()}
+            return None
         return attacked_metrics
     else:
         attacked_metrics = get_metrics_from_json(attacked_path, mode)
         clean_metrics = get_metrics_from_json(clean_path, mode)
         if attacked_metrics is None or clean_metrics is None:
-            return {key: None for key in QUALITY_METRICS.keys()}
+            return None
         return [
             (clean_metric - attacked_metric)
             for attacked_metric, clean_metric in zip(attacked_metrics, clean_metrics)
@@ -131,6 +137,7 @@ def get_quality_from_jsons(clean_path, attacked_path):
     }
 
 
+@memory.cache
 def get_quality(dataset_name, source_name, attack_name, attack_strength, mode):
     if attack_name is None or attack_strength is None:
         raise ValueError(
@@ -190,7 +197,7 @@ def get_quality(dataset_name, source_name, attack_name, attack_strength, mode):
                         and _attack_name is None
                         and _attack_strength is None
                         and _source_name == source_name
-                        and _result_type == "decode"
+                        and _result_type == "metric"
                     )
                 ).values()
             )[0]
@@ -201,7 +208,7 @@ def get_quality(dataset_name, source_name, attack_name, attack_strength, mode):
                         and _attack_name == attack_name
                         and abs(_attack_strength - attack_strength) < 1e-5
                         and _source_name == source_name
-                        and _result_type == "decode"
+                        and _result_type == "metric"
                     )
                 ).values()
             )[0]
@@ -217,7 +224,7 @@ def get_quality(dataset_name, source_name, attack_name, attack_strength, mode):
                         and _attack_name is None
                         and _attack_strength is None
                         and _source_name == "real"
-                        and _result_type == "decode"
+                        and _result_type == "metric"
                     )
                 ).values()
             )[0]
@@ -228,7 +235,7 @@ def get_quality(dataset_name, source_name, attack_name, attack_strength, mode):
                         and _attack_name == attack_name
                         and abs(_attack_strength - attack_strength) < 1e-5
                         and _source_name.startswith("real")
-                        and _result_type == "decode"
+                        and _result_type == "metric"
                     )
                 ).values()
             )[0]
@@ -250,3 +257,7 @@ def get_quality(dataset_name, source_name, attack_name, attack_strength, mode):
 
     except IndexError:
         return {key: None for key in QUALITY_METRICS.keys()}
+
+
+def clear_aggregated_cache():
+    memory.clear(warn=False)

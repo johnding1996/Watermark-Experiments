@@ -51,3 +51,36 @@ GROUND_TRUTH_MESSAGES = {
         "H4sIAGRrUmUC/6tWKs5ILEhVsoo2NDCI1VFKKakE8ZSS8vNzlGoZGBkZGRhAmAFCgxGIC+dBCAaYEEyCEVkOzISrYIToZIAoY2AEAG5jy4ODAAAA"
     ),
 }
+
+
+ATTACK_NAMES = {
+    "2x_regen": "Regen-2xDiffusion",
+    "4x_regen": "Regen-4xDiffusion",
+    "4x_regen_bmshj": "Regen-4xVAE",
+    "4x_regen_kl_vae": "Regen-4xKLVAE",
+    "adv_cls_real_wm_0.01_50_warm": "AdvCls-Real-WM",
+    "adv_cls_unwm_wm_0.01_50_warm_train3k": "AdvCls-UnWM-WM",
+    "adv_cls_wm1_wm2_0.01_50_warm": "AdvCls-WM1-WM2",
+    "adv_cls_wm1_wm2_0.04_200_warm": "abandon",
+    "adv_emb_clip_untg_alphaRatio_0.05_step_200": "AdvEmb-CLIP",
+    "adv_emb_klf16_vae_untg": "AdvEmb-KLVAE16",
+    "adv_emb_resnet18_untg": "AdvEmb-RN18",
+    "adv_emb_same_vae_untg": "AdvEmb-KLVAE8",
+    "adv_emb_sdxl_vae_untg": "AdvEmb-SdxlVAE",
+    "distortion_combo_all": "Dist-Com-All",
+    "distortion_combo_degradation": "Dist-Com-Deg",
+    "distortion_combo_geometric": "Dist-Com-Geo",
+    "distortion_combo_photometric": "Dist-Com-Photo",
+    "distortion_single_blurring": "Dist-Blur",
+    "distortion_single_brightness": "Dist-Bright",
+    "distortion_single_contrast": "Dist-Contrast",
+    "distortion_single_erasing": "Dist-Erase",
+    "distortion_single_jpeg": "Dist-JPEG",
+    "distortion_single_noise": "Dist-Noise",
+    "distortion_single_resizedcrop": "Dist-RCrop",
+    "distortion_single_rotation": "Dist-Rotation",
+    "kl_vae": "Regen-KLVAE",
+    "regen_diffusion": "Regen-Diffusion",
+    "regen_diffusion_prompt": "Regen-Diffusion&Prompt",
+    "regen_vae": "Regen-VAE",
+}

@@ -7,6 +7,7 @@ from .constants import (
     QUALITY_METRICS,
     EVALUATION_SETUPS,
     GROUND_TRUTH_MESSAGES,
+    ATTACK_NAMES,
 )
 from .io import (
     chmod_group_write,
@@ -46,7 +47,11 @@ from .aggregate import (
     get_single_quality_from_jsons,
     get_quality_from_jsons,
     get_quality,
+    clear_aggregated_cache,
 )
 from .plot import (
     style_progress_dataframe,
+    aggregate_comparison_dataframe,
+    plot_parallel_coordinates,
+    plot_2d_comparison,
 )
