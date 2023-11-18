@@ -67,7 +67,7 @@ ATTACK_NAMES = {
     "distortion_combo_degradation": "Dist-Com-Deg",
     "distortion_combo_all": "Dist-Com-All",
     "regen_diffusion": "Regen-Diffusion",
-    "regen_diffusion_prompt": "Regen-Diffusion&Prompt",
+    "regen_diffusion_prompt": "Regen-Diffusion&P",
     "regen_vae": "Regen-VAE",
     "kl_vae": "Regen-KLVAE",
     "2x_regen": "Regen-2xDiffusion",
