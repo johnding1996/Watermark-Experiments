@@ -166,11 +166,9 @@ def plot_2d_comparison(
     legend_fontsize=15,
     plot_height=800,
 ):
-    attack_names = dataframe["Attack"].unique()
-
     fig = go.Figure()
 
-    for i, attack_name in enumerate(attack_names):
+    for i, attack_name in enumerate(ATTACK_NAMES.keys()):
         if attack_name.startswith("dist"):
             marker = markers[0]
         elif attack_name.startswith("adv"):
@@ -189,7 +187,7 @@ def plot_2d_comparison(
                 mode="lines+markers+text" if show_text else "lines+markers",
                 name=ATTACK_NAMES[attack_name]
                 if attack_name in ATTACK_NAMES
-                else attack_name,
+                else "N/A",
                 line=dict(color=colors[i % len(colors)], width=line_width),
                 marker=dict(symbol=marker, size=marker_size),
                 textposition="bottom right",
