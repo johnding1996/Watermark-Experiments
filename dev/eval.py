@@ -25,7 +25,7 @@ def message_distance(pred, target):
     elif target.dtype == np.float16:
         return complex_l1(pred, target)
     else:
-        raise ValueError(f"Unsupported dtype {target.dtype}")
+        raise TypeError
 
 
 def detection_perforamance(original_distances, watermarked_distances):
@@ -44,3 +44,19 @@ def detection_perforamance(original_distances, watermarked_distances):
         "low100_1": low100_1,
         "low1000_1": low1000_1,
     }
+
+
+def mean_and_std(values):
+    if values is None:
+        return None
+    return np.mean(values), np.std(values)
+
+
+def combine_means_and_stds(mean_and_std1, mean_and_std2):
+    if mean_and_std1 is None or mean_and_std2 is None:
+        return None
+    mean1, std1 = mean_and_std1
+    mean2, std2 = mean_and_std2
+    mean = (mean1 + mean2) / 2
+    std = np.sqrt((std1**2 + std2**2) / 2)
+    return mean, std

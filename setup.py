@@ -6,7 +6,7 @@ with open("requirements_cli.txt") as f:
 
 setup(
     name="wmbench",
-    version="0.1",
+    version="0.2.1",
     packages=find_packages(),
     py_modules=["cli"],
     install_requires=requirements,

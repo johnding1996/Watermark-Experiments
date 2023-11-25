@@ -1,4 +1,21 @@
 import pandas as pd
+import plotly.graph_objects as go
+import plotly.express as px
+from .constants import PERFORMANCE_METRICS, QUALITY_METRICS, ATTACK_NAMES
+
+colors = px.colors.qualitative.Plotly
+markers = [
+    "circle",
+    "square",
+    "diamond",
+    "cross",
+    "x",
+    "triangle-up",
+    "triangle-down",
+    "pentagon",
+    "hexagon",
+    "star",
+]
 
 
 def style_progress_dataframe(row_list):
@@ -42,7 +59,7 @@ def style_progress_dataframe(row_list):
             return [""] * len(row)
 
     def style_rows_by_reverse(row):
-        if row["Source"].endswith("tree_ring") and (
+        if (row["Source"] == "real" or row["Source"].endswith("tree_ring")) and (
             pd.isna(row["Reversed"]) or row["Reversed"] < 5000
         ):
             return (
@@ -83,3 +100,115 @@ def style_progress_dataframe(row_list):
     )
 
     return styler
+
+
+def aggregate_comparison_dataframe(row_list):
+    dataframe = pd.DataFrame(
+        row_list,
+        columns=[
+            "Attack",
+            "Strength",
+            *(list(PERFORMANCE_METRICS.values())),
+            *(list(QUALITY_METRICS.values())),
+        ],
+    ).sort_values(
+        by=["Attack", "Strength"],
+        ascending=[True, True],
+    )
+    dataframe = dataframe.astype(
+        {
+            "Attack": "string",
+            "Strength": "string",
+            **{v: "float64" for v in PERFORMANCE_METRICS.values()},
+            **{v: "float64" for v in PERFORMANCE_METRICS.values()},
+        }
+    )
+    return dataframe
+
+
+def plot_parallel_coordinates(dataframe):
+    fig_performance = go.Figure(
+        data=go.Parcoords(
+            dimensions=[
+                {"label": k, "values": dataframe[k]}
+                for k in PERFORMANCE_METRICS.values()
+            ],
+        ),
+        layout=go.Layout(
+            title="Correlation of Performances",
+            margin={"l": 500, "r": 500, "t": 500, "b": 500},
+        ),
+    )
+
+    fig_quality = go.Figure(
+        data=go.Parcoords(
+            dimensions=[
+                {"label": k, "values": dataframe[k]} for k in QUALITY_METRICS.values()
+            ],
+        ),
+        layout=go.Layout(
+            title="Correlation of Qualities",
+            margin={"l": 500, "r": 500, "t": 500, "b": 500},
+        ),
+    )
+
+    return fig_performance, fig_quality
+
+
+def plot_2d_comparison(
+    dataframe,
+    performance_metric,
+    quality_metric,
+    show_text=False,
+    line_width=3,
+    marker_size=9,
+    tick_size=10,
+    legend_fontsize=15,
+    plot_height=800,
+):
+    fig = go.Figure()
+
+    for i, attack_name in enumerate(ATTACK_NAMES.keys()):
+        if attack_name.startswith("dist"):
+            marker = markers[0]
+        elif attack_name.startswith("adv"):
+            marker = markers[-1]
+        else:
+            marker = markers[4]
+
+        df_cat = dataframe[dataframe["Attack"] == attack_name]
+        df_cat = df_cat.assign(Strength_float=df_cat["Strength"].astype(float))
+        df_cat = df_cat.sort_values("Strength_float").drop(columns=["Strength_float"])
+        fig.add_trace(
+            go.Scatter(
+                x=df_cat[quality_metric],
+                y=df_cat[performance_metric],
+                text=df_cat["Strength"],
+                mode="lines+markers+text" if show_text else "lines+markers",
+                name=ATTACK_NAMES[attack_name]
+                if attack_name in ATTACK_NAMES
+                else "N/A",
+                line=dict(color=colors[i % len(colors)], width=line_width),
+                marker=dict(symbol=marker, size=marker_size),
+                textposition="bottom right",
+            )
+        )
+
+    # Adjust the layout for the line plot and add legend
+    fig.update_layout(
+        title_text="Comparison of Attacks",
+        showlegend=True,
+        legend=dict(
+            orientation="v",
+            yanchor="top",
+            y=1,
+            xanchor="left",
+            x=1.05,
+            font=dict(size=legend_fontsize),
+        ),
+        xaxis=dict(title=quality_metric, tickfont=dict(size=tick_size)),
+        yaxis=dict(title=performance_metric, tickfont=dict(size=tick_size)),
+        height=plot_height,
+    )
+
+    return fig

@@ -22,7 +22,7 @@ pip install git+https://github.com/openai/CLIP.git
 # Parallel libraries
 pip install accelerate deepspeed
 # HF space and gradio libraries
-pip install huggingface-hub gitpython gradio==4.3.0
+pip install huggingface-hub gitpython gradio==4.3.0 plotly plotly-express
 # Other libraries
 
 # Fix CUDNN issue for libnvrtc.so, see https://stackoverflow.com/questions/76216778/userwarning-applied-workaround-for-cudnn-issue-install-nvrtc-so
