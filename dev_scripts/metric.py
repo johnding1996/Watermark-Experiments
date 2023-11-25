@@ -422,7 +422,7 @@ def single_mode(
     "--path", "-p", type=str, default=os.getcwd(), help="Path to image directory"
 )
 @click.option("--dry", "-d", is_flag=True, default=False, help="Dry run")
-# TODO: change default to False later
+# TODO: change default to False after paper and appendices are done
 @click.option("--subset", "-s", is_flag=True, default=True, help="Run on subset only")
 @click.option("--quiet", "-q", is_flag=True, default=False, help="Quiet mode")
 def main(path, dry, subset, quiet, limit=LIMIT, subset_limit=SUBSET_LIMIT):

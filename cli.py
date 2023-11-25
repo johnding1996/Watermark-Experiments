@@ -63,7 +63,7 @@ def call_script(script_name, all, dry, args):
                 lambda _dataset_name, _attack_name, _attack_strength, _source_name: (
                     # TODO: Remove this filter later
                     _dataset_name
-                    in ["diffusiondb", "mscoco"]
+                    in ["dalle3"]
                 )
             ).values()
         )

@@ -9,7 +9,7 @@ source venv/bin/activate
 pip install --upgrade pip ipython jupyter ipywidgets python-dotenv
 # Install dependences (on CUDA 11.8)
 # PyTorch 2.1.0
-pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+pip install torch==2.1.0 torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
 # Huggingface libraries
 pip install transformers diffusers 'datasets[vision]' ftfy
 pip install -U xformers --index-url https://download.pytorch.org/whl/cu118
