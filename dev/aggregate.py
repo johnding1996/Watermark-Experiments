@@ -61,7 +61,13 @@ def get_performance(dataset_name, source_name, attack_name, attack_strength, mod
                         _dataset_name == dataset_name
                         and _attack_name == attack_name
                         and abs(_attack_strength - attack_strength) < 1e-5
-                        and _source_name.startswith("real")
+                        and (
+                            (_source_name == "real")
+                            or (
+                                _source_name.startswith("real")
+                                and _source_name.endswith(source_name)
+                            )
+                        )
                         and _result_type == "decode"
                     )
                 ).values()
@@ -88,7 +94,13 @@ def get_performance(dataset_name, source_name, attack_name, attack_strength, mod
                         _dataset_name == dataset_name
                         and _attack_name == attack_name
                         and abs(_attack_strength - attack_strength) < 1e-5
-                        and _source_name.startswith("real")
+                        and (
+                            (_source_name == "real")
+                            or (
+                                _source_name.startswith("real")
+                                and _source_name.endswith(source_name)
+                            )
+                        )
                         and _result_type == "decode"
                     )
                 ).values()
@@ -151,11 +163,10 @@ def get_quality(dataset_name, source_name, attack_name, attack_strength, mode):
                         _dataset_name == dataset_name
                         and _attack_name is None
                         and _attack_strength is None
-                        and _source_name
-                        == (
-                            source_name
+                        and (
+                            (_source_name == source_name)
                             if not source_name.startswith("real")
-                            else "real"
+                            else _source_name.startswith("real")
                         )
                         and _result_type == "metric"
                     )
@@ -167,11 +178,10 @@ def get_quality(dataset_name, source_name, attack_name, attack_strength, mode):
                         _dataset_name == dataset_name
                         and _attack_name == attack_name
                         and abs(_attack_strength - attack_strength) < 1e-5
-                        and _source_name
-                        == (
-                            source_name
+                        and (
+                            (_source_name == source_name)
                             if not source_name.startswith("real")
-                            else "real"
+                            else _source_name.startswith("real")
                         )
                         and _result_type == "metric"
                     )
@@ -234,7 +244,13 @@ def get_quality(dataset_name, source_name, attack_name, attack_strength, mode):
                         _dataset_name == dataset_name
                         and _attack_name == attack_name
                         and abs(_attack_strength - attack_strength) < 1e-5
-                        and _source_name.startswith("real")
+                        and (
+                            (_source_name == "real")
+                            or (
+                                _source_name.startswith("real")
+                                and _source_name.endswith(source_name)
+                            )
+                        )
                         and _result_type == "metric"
                     )
                 ).values()

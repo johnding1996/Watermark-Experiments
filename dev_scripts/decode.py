@@ -291,7 +291,7 @@ def main(path, dry, subset, quiet, limit=LIMIT, subset_limit=SUBSET_LIMIT):
     if source_name == "real":
         for mode in WATERMARK_METHODS.keys():
             single_mode(mode, path, quiet, subset, limit, subset_limit)
-            return
+        return
     for mode in WATERMARK_METHODS.keys():
         if source_name.endswith(mode):
             single_mode(mode, path, quiet, subset, limit, subset_limit)

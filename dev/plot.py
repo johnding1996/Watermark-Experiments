@@ -3,19 +3,9 @@ import plotly.graph_objects as go
 import plotly.express as px
 from .constants import PERFORMANCE_METRICS, QUALITY_METRICS, ATTACK_NAMES
 
-colors = px.colors.qualitative.Plotly
-markers = [
-    "circle",
-    "square",
-    "diamond",
-    "cross",
-    "x",
-    "triangle-up",
-    "triangle-down",
-    "pentagon",
-    "hexagon",
-    "star",
-]
+colors = (
+    px.colors.qualitative.Plotly + px.colors.qualitative.D3 + px.colors.qualitative.G10
+)
 
 
 def style_progress_dataframe(row_list):
@@ -170,11 +160,11 @@ def plot_2d_comparison(
 
     for i, attack_name in enumerate(ATTACK_NAMES.keys()):
         if attack_name.startswith("dist"):
-            marker = markers[0]
+            marker = "square"
         elif attack_name.startswith("adv"):
-            marker = markers[-1]
+            marker = "star"
         else:
-            marker = markers[4]
+            marker = "x"
 
         df_cat = dataframe[dataframe["Attack"] == attack_name]
         df_cat = df_cat.assign(Strength_float=df_cat["Strength"].astype(float))
