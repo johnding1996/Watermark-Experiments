@@ -76,6 +76,7 @@ def show_experiment_progress(
             (key[0], key[3], key[1], key[2]): [None, None, None, None]
             for key in json_dict.keys()
         }
+        gr.Info(f"Found {len(progress_dict)} records")
         for key, json_path in progress.tqdm(json_dict.items()):
             progress_dict[(key[0], key[3], key[1], key[2])][
                 ["status", "reverse", "decode", "metric"].index(key[4])
