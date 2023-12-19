@@ -35,9 +35,9 @@ QUALITY_METRICS = {
 }
 
 EVALUATION_SETUPS = {
-    "combined": "Combined",
     "removal": "Removal",
     "spoofing": "Spoofing",
+    "combined": "Combined",
 }
 
 GROUND_TRUTH_MESSAGES = {
