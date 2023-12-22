@@ -73,11 +73,20 @@ def decode_array_from_string(encoded_string):
 
 
 def encode_image_to_string(image, quality=90):
+    # Ensure consistent image format (e.g., convert to RGB)
+    if image.mode != "RGB":
+        image = image.convert("RGB")
     # Save the image to a byte buffer in JPEG format
     buffered = BytesIO()
     image.save(buffered, format="JPEG", quality=quality)
+    # Compress with gzip using consistent settings
+    gzip_buffer = BytesIO()
+    with gzip.GzipFile(
+        fileobj=gzip_buffer, mode="wb", compresslevel=5, mtime=0
+    ) as gz_file:
+        gz_file.write(buffered.getvalue())
     # Encode the buffer to a base64 string
-    return base64.b64encode(gzip.compress(buffered.getvalue())).decode("utf-8")
+    return base64.b64encode(gzip_buffer.getvalue()).decode("utf-8")
 
 
 def decode_image_from_string(encoded_string):

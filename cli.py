@@ -61,9 +61,7 @@ def call_script(script_name, all, dry, args):
         paths = list(
             get_all_image_dir_paths(
                 lambda _dataset_name, _attack_name, _attack_strength, _source_name: (
-                    # TODO: Remove this filter later
-                    _dataset_name
-                    in ["dalle3"]
+                    True
                 )
             ).values()
         )

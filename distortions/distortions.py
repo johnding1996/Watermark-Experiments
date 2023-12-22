@@ -137,7 +137,7 @@ def apply_single_distortion(image, distortion_type, strength=None, distortion_se
 
     elif distortion_type == "blurring":
         kernel_size = (
-            int(strength)
+            strength
             if strength is not None
             else random.uniform(*distortion_strength_paras["blurring"])
         )
