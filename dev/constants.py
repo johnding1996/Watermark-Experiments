@@ -15,14 +15,17 @@ WATERMARK_METHODS = {
 }
 
 PERFORMANCE_METRICS = {
-    "acc_1": "Mean Accuracy",
+    "acc_1": "Mean Detection Accuracy",
     "auc_1": "AUC",
     "low100_1": "TPR@1%FPR",
     "low1000_1": "TPR@0.1%FPR",
+    "acc_100": "Identification Accuracy (100 Users)",
+    "acc_1000": "Identification Accuracy (1K Users)",
+    "acc_1000000": "Identification Accuracy (1M Users)",
 }
 
 QUALITY_METRICS = {
-    "legacy_fid": "Legacy FID",
+    "legacy_fid": "FID",
     "clip_fid": "CLIP FID",
     "psnr": "PSNR",
     "ssim": "SSIM",
@@ -74,9 +77,9 @@ ATTACK_NAMES = {
     "4x_regen": "Rinse-4xDiff",
     "4x_regen_bmshj": "RinseD-VAE",
     "4x_regen_kl_vae": "RinseD-KLVAE",
+    "adv_emb_same_vae_untg": "AdvEmbG-KLVAE8",
     "adv_emb_resnet18_untg": "AdvEmbB-RN18",
     "adv_emb_clip_untg_alphaRatio_0.05_step_200": "AdvEmbB-CLIP",
-    "adv_emb_same_vae_untg": "AdvEmbG-KLVAE8",
     "adv_emb_klf16_vae_untg": "AdvEmbB-KLVAE16",
     "adv_emb_sdxl_vae_untg": "AdvEmbB-SdxlVAE",
     "adv_cls_unwm_wm_0.01_50_warm_train3k": "AdvCls-UnWM&WM",
@@ -111,4 +114,31 @@ ATTACK_CATEGORIES = {
         "adv_emb_klf16_vae_untg",
     ],
     "Adv Surrogate Detector": ["adv_cls_wm1_wm2_0.01_50_warm"],
+}
+
+
+QUALITY_NORMALIZATION_THRESHOLDS = (0.1, 0.9)
+
+
+QUALITY_NORMALIZATION_INTERVALS = {
+    "legacy_fid": (1.2018279835082921, 53.4025023653088),
+    "clip_fid": (0.28221379251059064, 19.01774805091691),
+    "psnr": (41.97326692759963, 12.146514692824278),
+    "ssim": (0.9794436656191583, 0.32230828785622945),
+    "nmi": (1.706872784927291, 1.0645803311654816),
+    "lpips": (0.01795978478139732, 0.6205694336295128),
+    "aesthetics": (0.024198556509613993, 1.8233248041778802),
+    "artifacts": (0.0018974746170453707, -0.581003303605318),
+}
+
+
+QUALITY_NORMALIZATION_WEIGHTS = {
+    "legacy_fid": 1 / 4 / 2,
+    "clip_fid": 1 / 4 / 2,
+    "psnr": 1 / 4 / 3,
+    "ssim": 1 / 4 / 3,
+    "nmi": 1 / 4 / 3,
+    "lpips": 1 / 4 / 1,
+    "aesthetics": 1 / 4 / 2,
+    "artifacts": 1 / 4 / 2,
 }

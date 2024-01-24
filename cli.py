@@ -58,13 +58,35 @@ def call_script(script_name, all, dry, args):
             raise ValueError(
                 "Cannot use --path or -p when running on all image directories"
             )
+
+        # TODO: remove this filter
+        selected_attack_names_and_strengths = [
+            ("4x_regen", 1.0),
+            ("4x_regen", 2.0),
+            ("distortion_single_rotation", 1.0),
+            ("distortion_single_rotation", 3.0),
+            ("distortion_single_resizedcrop", 0.85),
+            ("distortion_single_resizedcrop", 0.95),
+            ("distortion_combo_degradation", 0.02),
+        ]
         paths = list(
             get_all_image_dir_paths(
                 lambda _dataset_name, _attack_name, _attack_strength, _source_name: (
-                    True
+                    any(
+                        [
+                            (_attack_name == attack_name)
+                            and (
+                                _attack_strength is not None
+                                and abs(_attack_strength - attack_strength) < 1e-5
+                            )
+                            for attack_name, attack_strength in selected_attack_names_and_strengths
+                        ]
+                    )
+                    and (not _source_name.startswith("real"))
                 )
             ).values()
         )
+
         random.shuffle(paths)
         print(
             f"Running command 'wmbench {script_name}' on {len(paths)} image directories found"

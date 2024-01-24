@@ -63,12 +63,20 @@ def get_example_from_json(path):
     ]
 
 
+def get_messages_from_json(path, mode):
+    try:
+        data = load_json(path)
+        return [decode_array_from_string(data[str(i)][mode]) for i in range(LIMIT)]
+    except TypeError:
+        return None
+
+
 def get_distances_from_json(path, mode):
     try:
         data = load_json(path)
         messages = [decode_array_from_string(data[str(i)][mode]) for i in range(LIMIT)]
         return [
-            message_distance(message, GROUND_TRUTH_MESSAGES[mode])
+            message_distance(message, GROUND_TRUTH_MESSAGES[mode], "detection")
             for message in messages
         ]
     except TypeError:

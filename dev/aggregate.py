@@ -2,8 +2,18 @@ import os
 from joblib import Memory
 from .constants import EVALUATION_SETUPS, PERFORMANCE_METRICS, QUALITY_METRICS
 from .find import get_all_json_paths
-from .parse import get_distances_from_json, get_metrics_from_json
-from .eval import detection_perforamance, mean_and_std, combine_means_and_stds
+from .parse import (
+    get_distances_from_json,
+    get_messages_from_json,
+    get_metrics_from_json,
+)
+from .eval import (
+    detection_perforamance,
+    identification_performance,
+    mean_and_std,
+    combine_means_and_stds,
+    normalized_quality,
+)
 
 
 memory = Memory(os.environ.get("CACHE_DIR"), verbose=0)
@@ -12,9 +22,13 @@ memory = Memory(os.environ.get("CACHE_DIR"), verbose=0)
 def get_performance_from_jsons(original_path, watermarked_path, mode):
     original_distances = get_distances_from_json(original_path, mode)
     watermarked_distances = get_distances_from_json(watermarked_path, mode)
+    watermarked_messages = get_messages_from_json(watermarked_path, mode)
     if original_distances is None or watermarked_distances is None:
         return {key: None for key in PERFORMANCE_METRICS.keys()}
-    return detection_perforamance(original_distances, watermarked_distances)
+    return {
+        **detection_perforamance(original_distances, watermarked_distances),
+        **identification_performance(watermarked_messages, mode),
+    }
 
 
 @memory.cache
@@ -141,12 +155,13 @@ def get_single_quality_from_jsons(clean_path, attacked_path, mode):
 
 
 def get_quality_from_jsons(clean_path, attacked_path):
-    return {
+    qualities = {
         mode: mean_and_std(
             get_single_quality_from_jsons(clean_path, attacked_path, mode)
         )
         for mode in QUALITY_METRICS.keys()
     }
+    return {**qualities, "normalized_quality": normalized_quality(qualities)}
 
 
 @memory.cache
